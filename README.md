@@ -1,6 +1,6 @@
 # 🧬 PrimeFlow: Frontend Visualization Engine
 
-![Next.js](https://img.shields.io/badge/Next.js-14.0-black?logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-16.1.1-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)
 ![Canvas API](https://img.shields.io/badge/HTML5-Canvas_API-orange?logo=html5)
 ![Vercel](https://img.shields.io/badge/Deployment-Vercel-black?logo=vercel)
@@ -24,7 +24,7 @@
 
 ## 🛠 기술 스택 (Tech Stack)
 
-* **Core:** Next.js 14 (App Router), TypeScript
+* **Core:** Next.js 16 (App Router), TypeScript
 * **Graphics:** HTML5 Canvas API (2D Context)
 * **Styling:** Tailwind CSS
 * **State Management:** Zustand
@@ -60,7 +60,7 @@ PrimerFlow-FE/
 ## 🚀 시작하기 (Getting Started)
 
 ### 사전 요구사항
-* Node.js 18.17.0 이상
+* Node.js 20.9.0 이상
 * npm 또는 yarn
 
 ### 설치 및 실행
@@ -82,4 +82,3 @@ npm install
 # 5. 개발 서버 실행
 npm run dev
 ```
-
