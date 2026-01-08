@@ -239,9 +239,9 @@ graph TD
     Validator["Input Validator"]:::subModule
     %% Algorithm Branch
     Gen["Candidate Generator<br/>(Sliding Window)"]:::subModule
-    PropFilt["Property filtering"]:::subModule
-    SpecFilt["Specificity filtering"]:::subModule
-    BindFilt["Binding filtering"]:::subModule
+    PropFilt["Property Filter"]:::subModule
+    SpecFilt["Specificity Filter"]:::subModule
+    BindFilt["Binding Filter"]:::subModule
     %% Result Branch
     JSON["JSON Serializer"]:::subModule
     %% 호출 관계 연결
