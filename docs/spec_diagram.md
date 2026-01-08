@@ -17,31 +17,31 @@ classDiagram
         +PositionInput position
     }
     class BasicInput {
-        +String templateSequence
-        +String targetOrganism
-        +Range productSize
-        +TmSettings primerTm
+        +String template_sequence
+        +String target_organism
+        +Range product_size
+        +TmSettings primer_tm
     }
     class PropertyInput {
-        +Range gcContent
-        +float maxTmDifference
-        +bool gcClamp
-        +int maxPolyX
+        +Range gc_content
+        +float max_tm_difference
+        +bool gc_clamp
+        +int max_poly_x
         +float concentration
     }
     class SpecificityInput {
-        +bool checkEnabled
-        +bool spliceVariantHandling
-        +bool snpExclusion
-        +MismatchSettings endMismatchStrictness
-        +bool misprimingLibrary
+        +bool check_enabled
+        +bool splice_variant_handling
+        +bool snp_exclusion
+        +MismatchSettings end_mismatch_strictness
+        +bool mispriming_library
     }
     class PositionInput {
-        +Range searchRange
-        +String exonJunctionSpan
-        +bool intronInclusion
-        +Range intronSize
-        +List~String~ restrictionEnzymes
+        +Range search_range
+        +String exon_junction_span
+        +bool intron_inclusion
+        +Range intron_size
+        +List~String~ restriction_enzymes
     }
     %% ==========================================================
     %% 2. Entity & Response Schema
@@ -90,20 +90,20 @@ classDiagram
         +float max
     }
     class MismatchSettings {
-        +int regionSize
-        +int minMismatch
+        +int region_size
+        +int min_mismatch
     }
     %% ==========================================================
     %% 4. Frontend State Management
     %% ==========================================================
     class ViewStore {
         <<Zustand State>>
-        +int viewportStartBp
-        +int viewportEndBp
-        +float zoomLevel
-        +String selectedPrimerId
-        +String hoveredPrimerId
-        +Object filterSortState
+        +int viewport_startBp
+        +int viewport_endBp
+        +float zoom_level
+        +String selected_primer_id
+        +String hovered_primer_id
+        +Object filter_sort_state
         
         +setViewport(start, end)
         +setZoom(level)
