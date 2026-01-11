@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import GenomeCanvas, { type GenomeData } from "@/components/canvas/GenomeCanvas";
+import GenomeCanvas from "@/components/canvas/GenomeCanvas";
 import { createBpScale } from "@/lib/math/coords"; // 만약 이 파일이 없다면 아래 주석 참고
 import { useViewStore } from "@/store/useViewStore";
+import type { GenomeData } from "@/lib/types/Genome";
 
 /**
  * 둥근 사각형 그리기 유틸리티
@@ -133,7 +134,7 @@ export default function Home() {
                     </div>
 
                     <div className="relative w-full">
-                        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[2px] bg-slate-800" />
+                        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[2px] bg-slate-800 z-0" />
                         <div className="grid grid-cols-4 gap-4">
                             {steps.map((item) => {
                                 const status =
@@ -150,7 +151,7 @@ export default function Home() {
                                         <button
                                             type="button"
                                             onClick={() => isUnlocked && handleStepChange(item.id)}
-                                            className={`flex h-11 w-11 items-center justify-center rounded-full border text-sm font-bold transition ${
+                                            className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full border text-sm font-bold transition ${
                                                 isUnlocked ? circle : `${circle} cursor-not-allowed opacity-60`
                                             }`}
                                         >

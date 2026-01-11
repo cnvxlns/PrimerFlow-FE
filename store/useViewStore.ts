@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { GenomeCanvasViewState } from "@/components/canvas/GenomeCanvas";
+import type { GenomeCanvasViewState } from "@/lib/types/Genome";
 
 type ViewStore = {
   viewState: GenomeCanvasViewState;

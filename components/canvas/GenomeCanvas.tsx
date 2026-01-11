@@ -1,60 +1,12 @@
 "use client";
 
-import type { CSSProperties, PointerEvent, WheelEvent } from "react";
+import type { PointerEvent, WheelEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-// --- Types ---
-export type GenomeFeature = {
-  id?: string;
-  start: number;
-  end: number;
-  label?: string;
-  color?: string;
-};
-
-export type GenomeTrack = {
-  id: string;
-  name?: string;
-  height?: number;
-  features: GenomeFeature[];
-};
-
-export type GenomeData = {
-  length: number;
-  tracks: GenomeTrack[];
-};
-
-export type GenomeCanvasViewState = {
-  scale: number;
-  offsetX: number;
-  offsetY: number;
-};
-
-export type GenomeCanvasRenderState = {
-  data?: GenomeData;
-  viewState: GenomeCanvasViewState;
-  viewport: {
-    width: number;
-    height: number;
-    devicePixelRatio: number;
-  };
-};
-
-export type GenomeCanvasProps = {
-  className?: string;
-  style?: CSSProperties;
-  genome?: GenomeData;
-  viewState?: GenomeCanvasViewState;
-  initialViewState?: GenomeCanvasViewState;
-  minScale?: number;
-  maxScale?: number;
-  onViewStateChange?: (nextViewState: GenomeCanvasViewState) => void;
-  onDraw?: (
-      ctx: CanvasRenderingContext2D,
-      canvas: HTMLCanvasElement,
-      renderState: GenomeCanvasRenderState,
-  ) => void;
-};
+import type {
+  GenomeCanvasProps,
+  GenomeCanvasRenderState,
+  GenomeCanvasViewState,
+} from "@/lib/types/Genome";
 
 const DEFAULT_VIEW_STATE: GenomeCanvasViewState = {
   scale: 1,
