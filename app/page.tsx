@@ -217,7 +217,7 @@ ATGCGT..."
                         <div className="flex flex-col gap-6">
                             <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-sm backdrop-blur">
                                 <div className="px-5 py-3 border-b border-slate-800 bg-[#161920]/50 flex items-center gap-2">
-                                    <span className="text-primary text-[20px]">tune</span>
+                                    <span className="material-icons text-primary text-[20px]">tune</span>
                                     <h3 className="text-white text-sm font-bold uppercase tracking-wider">
                                         Essential Settings
                                     </h3>
@@ -299,7 +299,7 @@ ATGCGT..."
                         </div>
                         <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 backdrop-blur">
                             <div className="px-5 py-3 border-b border-slate-800 bg-[#161920]/50 flex items-center gap-2">
-                                <span className="text-primary text-[20px]">science</span>
+                                <span className="material-icons text-primary text-[20px]">science</span>
                                 <h3 className="text-white text-sm font-bold uppercase tracking-wider">
                                     Primer Properties
                                 </h3>
@@ -375,7 +375,7 @@ ATGCGT..."
                     <section className="flex flex-col gap-6">
                         <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 backdrop-blur">
                             <div className="px-5 py-3 border-b border-slate-800 bg-[#161920]/50 flex items-center gap-2">
-                                <span className="text-primary text-[20px]">location_on</span>
+                                <span className="material-icons text-primary text-[20px]">location_on</span>
                                 <h3 className="text-white text-sm font-bold uppercase tracking-wider">
                                     Binding Location & Structure
                                 </h3>
@@ -484,7 +484,7 @@ ATGCGT..."
                             <div className="xl:col-span-5 rounded-2xl border border-slate-800/70 bg-slate-900/80 backdrop-blur">
                                 <div className="px-5 py-3 border-b border-slate-800 bg-[#161920]/50 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-primary text-[20px]">verified_user</span>
+                                        <span className="material-icons text-primary text-[20px]">verified_user</span>
                                         <h3 className="text-white text-sm font-bold uppercase tracking-wider">
                                             Specificity
                                         </h3>
@@ -776,7 +776,8 @@ ATGCGT..."
                                 : "bg-slate-800/80 text-white hover:bg-slate-800"
                         }`}
                     >
-                        {"<- Back"}
+                        <span className="material-icons text-white text-[20px]">arrow_back</span>
+                        <span>Back</span>
                     </button>
                     {!isLastStep && (
                         <button
@@ -786,7 +787,7 @@ ATGCGT..."
                         >
                             <div className="relative z-10 flex items-center justify-center gap-3">
                                 <span className="text-base font-bold text-white tracking-wide">Next</span>
-                                <span className="text-white text-[20px]">-&gt;</span>
+                                <span className="material-icons text-white text-[20px]">arrow_forward</span>
                             </div>
                             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
                         </button>
