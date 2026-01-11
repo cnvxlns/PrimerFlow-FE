@@ -82,3 +82,57 @@ npm install
 # 5. 개발 서버 실행
 npm run dev
 ```
+
+
+## 주간 진행 상황
+### Week 1 (25.12.22 - 25.12.28)
+- 작업 내역: 
+  - 기술스택 선정
+    - Next.js: 메인 페이지(app/page.tsx)와 전역 레이아웃을 구성, 정적 리소스 관리·헤드 설정
+    - Typescript: 컴포넌트·전역 스토어·유틸 타입을 명시
+    - Canvas API: 캔버스 컨텍스트를 직접 처리; 대용량 서열 랜더링, 줌/패닝 변환, 텍스트/바 도형 그리기 
+    - Zustand: 캔버스 뷰 상태, 리셋/업데이트 액션의 전역 관리
+    - Vercel: Next.js앱 배포
+  - 프로젝트 기본 아키텍처 및 스켈레톤 코드 구성
+- AI 활용: Gemini로 자세한 내용 프롬프트로 작성, codex로 프로젝트 아키텍처 및 스켈레톤 코드 작성.
+- 다음 주 계획: page.tsx, layout.tsx 구현, 목 데이터 출력 해보기
+
+### Week 2 (25.12.29 - 25.01.04)
+- 작업 내역: 
+  - 더미 데이터로 페이지에 연결
+  - 뷰 상태(Zustand)와 줌·패닝 동작을 정돈
+- AI 활용:
+  - codex 활용하여 layout.tsx, page.tsx 세부 구현 및 디버깅
+- 완료 기능:
+  - 목 데이터의 출력 상태 확인
+- 테스트 결과:
+  - ![week2_screenshot.png](docs/screenshots/week2_screenshot.png)
+- 다음 주 계획: 스펙 기반 초기 입력 폼과 검증 로직 착수.
+
+### Week 3 (26.01.05 ~ 26.01.11)
+- 작업 내역:
+  - PCR 프라이머 디자인 스펙을 작성해 1-based 규칙·IUPAC 제한·성능 목표를 포함한 요구사항과 시나리오를 정리
+  - 메인 UI 디자인 결정; 다크 톤 4단계 스텝 플로우로 리워크
+  - Genome 타입 분리
+- AI 활용: 
+  - stitch, figma에 같은 프롬프트를 넣고 디자인을 비교, 채택. 
+- 완료 기능:
+  - 단계별 UI 구현 완료
+    - 1단계: 시퀀스 입력(FASTA/raw textarea)
+    - 2단계: Primer Properties: GC% 범위, 최대 Tm 차이, GC Clamp 온/오프, Poly-X 제한, 농도/염 조건 입력
+    - 3단계: Binding Location: Search range 시작/끝, Exon junction 고려 여부, Intron 포함 여부와 Intron size 범위, Restriction enzyme 목록/선택.
+    - 4단계: 결과물 출력
+- 테스트 결과:
+  - 1단계
+
+    ![week3_screenshot#1.png](docs/screenshots/week3_screenshot%231.png)
+  - 2단계
+
+    ![week3_screenshot#2.png](docs/screenshots/week3_screenshot%232.png)
+  - 3단계
+
+    ![week3_screenshot#3.png](docs/screenshots/week3_screenshot%233.png)
+  - 4단계
+
+    ![week3_screenshot#4.png](docs/screenshots/week3_screenshot%234.png)
+- 다음 주 계획: 실제 데이터 연동, GenomeCanvas 미리보기·컨트롤 마무리.
