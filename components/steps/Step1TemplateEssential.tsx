@@ -1,6 +1,7 @@
 "use client";
 
 import { SlidersHorizontal } from "lucide-react";
+import TextareaAutosize from "react-textarea-autosize";
 
 export default function Step1TemplateEssential() {
     return (
@@ -28,19 +29,12 @@ export default function Step1TemplateEssential() {
                             <span className="text-xs text-slate-500 font-mono">0 bp</span>
                         </div>
                         <div className="relative flex-1">
-                            <textarea
+                            <TextareaAutosize
                                 className="w-full min-h-[200px] resize-none overflow-y-auto rounded-lg border border-slate-800 bg-[#0b1224] text-white p-4 font-mono text-sm leading-relaxed focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-600 transition-colors"
                                 placeholder={">Seq1\nATGCGT..."}
                                 spellCheck={false}
-                                onInput={(e) => {
-                                    const el = e.currentTarget;
-                                    const maxHeight = 500;
-
-                                    el.style.height = "auto";
-                                    const nextHeight = Math.min(el.scrollHeight, maxHeight);
-                                    el.style.height = `${nextHeight}px`;
-                                    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
-                                }}
+                                minRows={10}
+                                maxRows={20}
                             />
                         </div>
                     </label>
