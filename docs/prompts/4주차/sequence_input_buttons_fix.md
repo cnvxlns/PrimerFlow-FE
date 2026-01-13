@@ -5,10 +5,7 @@
 - Step1 시퀀스 입력 카드의 `Upload FASTA`, `Paste`, `Clean` 버튼이 동작하지 않아 파일 추가/클립보드 붙여넣기/입력 초기화 기능을 구현하고, 입력 길이(bp)도 즉시 반영하도록 개선.
 
 ## 2. 프롬프트 (User Input)
-<stitch>
 - step1에서 sequence input의 Upload FASTA, Paste, Clean버튼이 전혀 작동하지 않아. 각각의 버튼이 로컬의 디렉토리에서 찾아서 추가하는 기능, 클립보드에서 붙여넣는 기능, 입력된 내용을 제거하는 기능을 하게 수정해줘
-<codex>
-- Upload 버튼이 숨겨진 파일 입력을 트리거해 FASTA/텍스트를 읽어들여 textarea에 추가하고, Paste는 클립보드 텍스트를 붙여 넣으며, Clean은 입력을 초기화하도록 구현.
 
 ## 3. AI 응답 요약 (AI Output)
 
