@@ -1,9 +1,69 @@
 "use client";
 
+import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
 
 export default function Step1TemplateEssential() {
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const [sequenceInput, setSequenceInput] = useState("");
+
+    const basePairCount = useMemo(
+        () => sequenceInput.replace(/[^A-Za-z]/g, "").length,
+        [sequenceInput],
+    );
+
+    const focusTextarea = () => textareaRef.current?.focus();
+
+    const appendSequence = (next: string) => {
+        const sanitized = next.trim();
+
+        if (!sanitized) {
+            focusTextarea();
+            return;
+        }
+
+        setSequenceInput((prev) => (prev ? `${prev}\n${sanitized}` : sanitized));
+        focusTextarea();
+    };
+
+    const handleUploadClick = () => fileInputRef.current?.click();
+
+    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            appendSequence(text);
+        } catch (error) {
+            console.error("Failed to read FASTA file", error);
+        } finally {
+            event.target.value = "";
+        }
+    };
+
+    const handlePasteClick = async () => {
+        if (!navigator.clipboard?.readText) {
+            console.error("Clipboard API is not available in this browser.");
+            return;
+        }
+
+        try {
+            const text = await navigator.clipboard.readText();
+            appendSequence(text);
+        } catch (error) {
+            console.error("Failed to read from clipboard", error);
+        }
+    };
+
+    const handleCleanClick = () => {
+        setSequenceInput("");
+        focusTextarea();
+    };
+
     return (
         <section className="flex flex-col gap-4">
             <div className="rounded-xl border border-slate-800/70 bg-slate-900/80 px-4 py-3 text-base font-bold text-slate-300">
@@ -26,26 +86,48 @@ export default function Step1TemplateEssential() {
                             <span className="text-sm font-medium text-slate-400">
                                 Sequence Input (5&apos; -&gt; 3&apos;)
                             </span>
-                            <span className="text-xs text-slate-500 font-mono">0 bp</span>
+                            <span className="text-xs text-slate-500 font-mono">{basePairCount} bp</span>
                         </div>
                         <div className="relative flex-1">
                             <TextareaAutosize
+                                ref={textareaRef}
                                 className="w-full min-h-[200px] resize-none overflow-y-auto rounded-lg border border-slate-800 bg-[#0b1224] text-white p-4 font-mono text-sm leading-relaxed focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-600 transition-colors"
                                 placeholder={">Seq1\nATGCGT..."}
                                 spellCheck={false}
                                 minRows={10}
                                 maxRows={20}
+                                value={sequenceInput}
+                                onChange={(event) => setSequenceInput(event.target.value)}
                             />
                         </div>
                     </label>
                     <div className="flex flex-wrap gap-2 justify-end">
-                        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".fa,.fasta,.txt"
+                            className="hidden"
+                            onChange={handleFileChange}
+                        />
+                        <button
+                            type="button"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700"
+                            onClick={handleUploadClick}
+                        >
                             Upload FASTA
                         </button>
-                        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700">
+                        <button
+                            type="button"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700"
+                            onClick={handlePasteClick}
+                        >
                             Paste
                         </button>
-                        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700">
+                        <button
+                            type="button"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700"
+                            onClick={handleCleanClick}
+                        >
                             Clean
                         </button>
                     </div>
