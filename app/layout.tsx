@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Noto_Sans, Space_Grotesk } from "next/font/google";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import SiteFooter from "@/components/ui/Footer";
 import "./globals.css";
 
 const display = Space_Grotesk({
   variable: "--font-display",
-  subsets: ["latin"],
-});
-
-const body = Noto_Sans({
-  variable: "--font-body",
   subsets: ["latin"],
 });
 
@@ -30,15 +26,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/icon?family=Material+Icons"
-        />
       </head>
-      <body
-        className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${display.variable} ${mono.variable} antialiased`}>
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1">{children}</div>
+          <SiteFooter />
+        </div>
       </body>
     </html>
   );
