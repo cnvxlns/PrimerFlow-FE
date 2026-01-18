@@ -24,6 +24,32 @@ export const analyzeGenome = async (
   // const response = await api.post<AnalyzeResponse>(ANALYSIS_ENDPOINT, payload);
   // return response.data;
 
+  const sequenceLength = payload.target_sequence.length || 5000;
+
+  const mockGenome = {
+    length: Math.max(sequenceLength, 6000),
+    tracks: [
+      {
+        id: "primers",
+        name: "Primer Candidates",
+        height: 28,
+        features: [
+          { id: "p1", start: 500, end: 900, label: "P-Forward", color: "#2563eb" },
+          { id: "p2", start: 1300, end: 1700, label: "P-Reverse", color: "#22c55e" },
+          { id: "p3", start: 2400, end: 2800, label: "Alt-P", color: "#eab308" },
+        ],
+      },
+      {
+        id: "target",
+        name: "Target Region",
+        height: 18,
+        features: [
+          { id: "t1", start: 1100, end: 2300, label: "Amplicon", color: "#f97316" },
+        ],
+      },
+    ],
+  };
+
   const mockResponse: AnalyzeResponse = {
     result: "Success",
     score: 98.5,
@@ -34,6 +60,7 @@ export const analyzeGenome = async (
       species: payload.species,
       detected_markers: ["BRCA1", "TP53"],
       gc_content: "51.2%",
+      genome: mockGenome,
     },
   };
 
