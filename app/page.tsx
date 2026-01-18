@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { analyzeGenome, type AnalyzeRequest, type AnalyzeResponse } from "@/services/analysisService";
 import { useViewStore } from "@/store/useViewStore";
 import { demoGenome } from "@/lib/mocks/demoGenome";
 import Step1TemplateEssential from "@/components/steps/Step1TemplateEssential";
 import Step2PrimerProperties from "@/components/steps/Step2PrimerProperties";
 import Step3BindingLocation from "@/components/steps/Step3BindingLocation";
 import Step4SpecificityPreview from "@/components/steps/Step4SpecificityPreview";
-import PrimerDesignTrigger from "@/components/PrimerDesignTrigger";
 import WizardFooterNav from "@/components/ui/WizardFooterNav";
 import WizardHeader from "@/components/ui/WizardHeader";
 
@@ -37,6 +37,9 @@ export default function Home() {
     ] as const;
 
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+    const [isLoading, setIsLoading] = useState(false);
+    const [apiResult, setApiResult] = useState<AnalyzeResponse | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const totalSteps = steps.length;
     const handleStepChange = (next: number) => {
         const clamped = Math.min(Math.max(next, 1), totalSteps) as 1 | 2 | 3 | 4;
@@ -51,6 +54,30 @@ export default function Home() {
         (count, track) => count + track.features.length,
         0,
     );
+
+    const handleGeneratePrimers = async () => {
+        const payload: AnalyzeRequest = {
+            target_sequence: "ATGCGTACGTAGCTAGCTAGCTAGCTAATGCGTACGTAGCTAGCTAGCTAGCTA",
+            species: "Homo sapiens",
+            analysis_type: "primer_generation",
+            notes: "UI mock request while backend is offline",
+        };
+
+        setIsLoading(true);
+        setErrorMessage(null);
+
+        try {
+            const result = await analyzeGenome(payload);
+            setApiResult(result);
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "Failed to generate primers.";
+            setErrorMessage(message);
+            setApiResult(null);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-[#070d18] text-slate-100">
@@ -86,13 +113,29 @@ export default function Home() {
                         onResetView={resetViewState}
                     />
                 )}
-                {step === 4 && <PrimerDesignTrigger />}
                 <WizardFooterNav
                     step={step}
                     isLastStep={isLastStep}
                     onBack={handleBack}
                     onNext={handleNext}
+                    onGenerate={handleGeneratePrimers}
+                    isGenerating={isLoading}
                 />
+
+                {isLastStep && (apiResult || errorMessage) && (
+                    <div className="mt-4">
+                        {errorMessage && (
+                            <div className="rounded bg-red-100 px-4 py-2 text-sm font-semibold text-red-700">
+                                {errorMessage}
+                            </div>
+                        )}
+                        {apiResult && (
+                            <pre className="bg-gray-100 p-4 rounded mt-4 overflow-auto text-sm text-slate-900">
+                                {JSON.stringify(apiResult, null, 2)}
+                            </pre>
+                        )}
+                    </div>
+                )}
             </main>
         </div>
     );
