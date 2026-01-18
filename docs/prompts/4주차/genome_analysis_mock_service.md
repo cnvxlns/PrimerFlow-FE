@@ -25,7 +25,7 @@ Please create (or update) the `src/services/analysisService.ts` file with the fo
     * **Commented Real Code**: Please keep the actual `axios` post call code commented out so I can easily uncomment it later when the backend is ready.
 
 3.  **Dependencies**:
-    * Import `api` from `@/lib/axios`.
+    * Import `api` from `@/lib/api/client`.
 
 Context:
 - Framework: Next.js (App Router)
@@ -41,7 +41,7 @@ Refactor `src/app/page.tsx` to finalize the Primer Generation UI.
 ## 3. AI 응답 요약 (AI Output)
 
 - 새 `src/services/analysisService.ts`에 `AnalyzeRequest`(snake_case), `AnalyzeResponse` 타입 정의 후 `analyzeGenome`을 1.5초 지연 뒤 더미 데이터(결과/점수/세부정보)로 resolve하도록 구현, 실제 `api.post` 호출은 주석으로 보관.
-- `lib/axios.ts`를 추가해 기존 axios 클라이언트를 `api` alias로 export, 서비스에서 `@/lib/axios` 경로 사용 가능하도록 정리.
+- `lib/api/client.ts`에 axios 클라이언트를 두고 `api` alias를 export하도록 정리해 단일 진입점으로 통합.
 - `components/ui/WizardFooterNav.tsx`의 마지막 스텝 버튼을 `onGenerate`/`isGenerating` props로 확장해 로딩 중 비활성화 및 “Loading...” 텍스트를 노출하도록 수정.
 - `app/page.tsx`에서 Smoke Test 컴포넌트 제거 후 최종 스텝의 “Generate Primers” 버튼을 `analyzeGenome`에 연결; `isLoading`/`apiResult`/`errorMessage` 상태를 추가해 try-catch로 오류를 처리하고, `<pre className="bg-gray-100 p-4 rounded mt-4 overflow-auto">`에 JSON.stringify 결과를 출력.
 - API 성공 시 결과를 `GenomeData`로 안전 변환하는 헬퍼를 추가해 `GenomeCanvas`가 요구하는 스키마를 만족시키고, 모달을 띄워 기존 프리뷰 UI(줌 인/아웃/리셋 컨트롤 + Canvas)를 재사용해 결과를 시각화.

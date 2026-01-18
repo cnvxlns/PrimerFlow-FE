@@ -107,7 +107,7 @@ export default function Home() {
             offsetY: 0,
         });
 
-    const handleGeneratePrimers = async () => {
+    const handleGenerate = async () => {
         const payload: AnalyzeRequest = {
             target_sequence: "ATGCGTACGTAGCTAGCTAGCTAGCTAATGCGTACGTAGCTAGCTAGCTAGCTA",
             species: "Homo sapiens",
@@ -132,6 +132,9 @@ export default function Home() {
             setApiResult(null);
             setResultGenome(null);
             setIsModalOpen(false);
+            // Surface the error for visibility during development.
+            console.error("Generate Primers failed", error);
+            alert(message);
         } finally {
             setIsLoading(false);
         }
@@ -190,7 +193,7 @@ export default function Home() {
                     isLastStep={isLastStep}
                     onBack={handleBack}
                     onNext={handleNext}
-                    onGenerate={handleGeneratePrimers}
+                    onGenerate={handleGenerate}
                     isGenerating={isLoading}
                 />
 
