@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- keep import for the future real request
-import { api } from "@/lib/api/client";
+import { api } from "./client";
 
 export interface AnalyzeRequest {
   target_sequence: string;
