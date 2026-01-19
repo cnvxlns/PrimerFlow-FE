@@ -7,6 +7,8 @@ type WizardFooterNavProps = {
     isLastStep: boolean;
     onBack: () => void;
     onNext: () => void;
+    onGenerate?: () => void;
+    isGenerating?: boolean;
 };
 
 export default function WizardFooterNav({
@@ -14,6 +16,8 @@ export default function WizardFooterNav({
     isLastStep,
     onBack,
     onNext,
+    onGenerate,
+    isGenerating = false,
 }: WizardFooterNavProps) {
     return (
         <div className="sticky bottom-6 z-10 flex items-center justify-between">
@@ -47,11 +51,17 @@ export default function WizardFooterNav({
             {isLastStep && (
                 <button
                     type="button"
-                    className="group relative h-12 overflow-hidden rounded-xl bg-blue-600 px-6 text-center shadow-lg shadow-blue-900/30 transition-all hover:bg-blue-500 hover:shadow-blue-700/40 hover:-translate-y-1"
+                    onClick={onGenerate}
+                    disabled={isGenerating}
+                    className={`group relative h-12 overflow-hidden rounded-xl px-6 text-center shadow-lg shadow-blue-900/30 transition-all ${
+                        isGenerating
+                            ? "cursor-not-allowed bg-slate-600"
+                            : "bg-blue-600 hover:bg-blue-500 hover:shadow-blue-700/40 hover:-translate-y-1"
+                    }`}
                 >
                     <div className="relative z-10 flex items-center justify-center gap-3">
                         <span className="text-base font-bold tracking-wide text-white">
-                            Generate Primers
+                            {isGenerating ? "Loading..." : "Generate Primers"}
                         </span>
                     </div>
                     <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />

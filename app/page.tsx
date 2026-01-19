@@ -1,14 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import { useViewStore } from "@/store/useViewStore";
+import PrimerResultModal from "@/components/PrimerResultModal";
+import { analyzeGenome, type AnalyzeRequest, type AnalyzeResponse } from "@/lib/api/analysisService";
 import { demoGenome } from "@/lib/mocks/demoGenome";
+import type { GenomeData } from "@/lib/types/Genome";
+import { useViewStore } from "@/store/useViewStore";
 import Step1TemplateEssential from "@/components/steps/Step1TemplateEssential";
 import Step2PrimerProperties from "@/components/steps/Step2PrimerProperties";
 import Step3BindingLocation from "@/components/steps/Step3BindingLocation";
 import Step4SpecificityPreview from "@/components/steps/Step4SpecificityPreview";
 import WizardFooterNav from "@/components/ui/WizardFooterNav";
 import WizardHeader from "@/components/ui/WizardHeader";
+
+const isGenomeFeature = (feature: any) =>
+    feature &&
+    typeof feature.start === "number" &&
+    typeof feature.end === "number" &&
+    feature.start <= feature.end;
+
+const isGenomeData = (data: any): data is GenomeData =>
+    data &&
+    typeof data.length === "number" &&
+    Array.isArray(data.tracks) &&
+    data.tracks.every(
+        (track: any) =>
+            track &&
+            typeof track.id === "string" &&
+            Array.isArray(track.features) &&
+            track.features.every(isGenomeFeature),
+    );
+
+const toGenomeDataFromResponse = (
+    response: AnalyzeResponse | null,
+    fallback: GenomeData,
+): GenomeData => {
+    if (!response) return fallback;
+    const details = response.details;
+    if (details && typeof details === "object") {
+        const candidate = (details as any).genome ?? details;
+        if (isGenomeData(candidate)) {
+            return candidate;
+        }
+    }
+    return fallback;
+};
 
 export default function Home() {
     const viewState = useViewStore((state) => state.viewState);
@@ -36,6 +72,11 @@ export default function Home() {
     ] as const;
 
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+    const [isLoading, setIsLoading] = useState(false);
+    const [apiResult, setApiResult] = useState<AnalyzeResponse | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [resultGenome, setResultGenome] = useState<GenomeData | null>(null);
     const totalSteps = steps.length;
     const handleStepChange = (next: number) => {
         const clamped = Math.min(Math.max(next, 1), totalSteps) as 1 | 2 | 3 | 4;
@@ -50,6 +91,38 @@ export default function Home() {
         (count, track) => count + track.features.length,
         0,
     );
+
+    const handleGenerate = async () => {
+        const payload: AnalyzeRequest = {
+            target_sequence: "ATGCGTACGTAGCTAGCTAGCTAGCTAATGCGTACGTAGCTAGCTAGCTAGCTA",
+            species: "Homo sapiens",
+            analysis_type: "primer_generation",
+            notes: "UI mock request while backend is offline",
+        };
+
+        setIsLoading(true);
+        setErrorMessage(null);
+
+        try {
+            const result = await analyzeGenome(payload);
+            setApiResult(result);
+            const genomeFromApi = toGenomeDataFromResponse(result, demoGenome);
+            setResultGenome(genomeFromApi);
+            setIsModalOpen(true);
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "Failed to generate primers.";
+            setErrorMessage(message);
+            setApiResult(null);
+            setResultGenome(null);
+            setIsModalOpen(false);
+            // Surface the error for visibility during development.
+            console.error("Generate Primers failed", error);
+            alert(message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-[#070d18] text-slate-100">
@@ -90,8 +163,23 @@ export default function Home() {
                     isLastStep={isLastStep}
                     onBack={handleBack}
                     onNext={handleNext}
+                    onGenerate={handleGenerate}
+                    isGenerating={isLoading}
                 />
+
+                {isLastStep && errorMessage && (
+                    <div className="mt-4 rounded bg-red-100 px-4 py-2 text-sm font-semibold text-red-700">
+                        {errorMessage}
+                    </div>
+                )}
             </main>
+
+            <PrimerResultModal
+                isOpen={isModalOpen}
+                apiResult={apiResult}
+                genome={resultGenome}
+                onClose={() => setIsModalOpen(false)}
+            />
         </div>
     );
 }

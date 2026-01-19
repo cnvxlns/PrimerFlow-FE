@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import SiteFooter from "@/components/ui/Footer";
+import Providers from "./providers";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -24,14 +25,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <head>
       </head>
       <body className={`${display.variable} ${mono.variable} antialiased`}>
-        <div className="min-h-screen flex flex-col">
-          <div className="flex-1">{children}</div>
-          <SiteFooter />
-        </div>
+        <Providers>
+          <div className="min-h-screen flex flex-col">
+            <div className="flex-1">{children}</div>
+            <SiteFooter />
+          </div>
+        </Providers>
       </body>
     </html>
   );
