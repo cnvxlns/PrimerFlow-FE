@@ -136,3 +136,21 @@ npm run dev
 
     ![week3_screenshot#4.png](docs/screenshots/week3_screenshot%234.png)
 - 다음 주 계획: 실제 데이터 연동, GenomeCanvas 미리보기·컨트롤 마무리.
+
+### Week 4 (26.01.12 ~ 26.01.18)
+- 작업 내역:
+  - 백엔드 모킹 서비스 구현 및 결과 시각화
+  - Step 1 시퀀스 입력 편의성 개선
+  - 컴포넌트 아키텍처 개선 및 UI 업데이트
+- AI 활용:
+  - codex로 캔버스가 표시되는 모달 구현
+  - paste등 버튼 기능 구현
+- 완료 기능:
+  - 목데이터를 모달을 이용하여 표시
+  - Step1에서 DNA서열 입력 시, fasta파일 업로드, 클립보드에서 붙여넣기 지원
+
+- 테스트 결과:
+  - 목데이터 표시 확인
+
+    ![week4_screenshot#1.png](docs/screenshots/week4_screenshot%231.png)
+- 다음 주 계획: 완성된 백엔드와 연동하여 결과 표시 및 디버깅
