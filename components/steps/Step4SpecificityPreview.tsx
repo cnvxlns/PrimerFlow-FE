@@ -2,7 +2,7 @@
 
 import GenomeCanvas from "@/components/canvas/GenomeCanvas";
 import { createBpScale } from "@/lib/math/coords";
-import type { GenomeCanvasViewState, GenomeData } from "@/lib/types/Genome";
+import type { GenomeCanvasViewState, GenomeData } from "@/types";
 import { ShieldCheck } from "lucide-react";
 
 type Step4SpecificityPreviewProps = {

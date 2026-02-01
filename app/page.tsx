@@ -6,9 +6,8 @@ import {
     analyzeGenome,
     type AnalyzeRequestInput,
 } from "@/services/analysisService";
-import type { PrimerDesignResponseUI } from "@/types/analysis";
 import { demoGenome } from "@/lib/mocks/demoGenome";
-import type { GenomeData } from "@/lib/types/Genome";
+import type { GenomeData, PrimerDesignResponseUI } from "@/types";
 import { useViewStore } from "@/store/useViewStore";
 import Step1TemplateEssential from "@/components/steps/Step1TemplateEssential";
 import Step2PrimerProperties from "@/components/steps/Step2PrimerProperties";

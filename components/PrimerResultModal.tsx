@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import GenomeCanvas from "@/components/canvas/GenomeCanvas";
-import type { PrimerDesignResponseUI } from "@/types/analysis";
-import type { GenomeCanvasViewState, GenomeData } from "@/lib/types/Genome";
+import type {
+  GenomeCanvasViewState,
+  GenomeData,
+  PrimerDesignResponseUI,
+} from "@/types";
 
 interface PrimerResultModalProps {
     isOpen: boolean;

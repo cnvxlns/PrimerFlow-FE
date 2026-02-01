@@ -5,7 +5,7 @@ import type {
   PrimerDesignResponseUI,
   UIPrimerCandidate,
   UIGenome,
-} from "@/types/analysis";
+} from "@/types";
 
 // Flat input from UI (kept flexible)
 export interface AnalyzeRequestInput {

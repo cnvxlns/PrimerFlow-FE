@@ -1,4 +1,4 @@
-import type { GenomeData } from "@/lib/types/Genome";
+import type { GenomeData } from "@/types";
 
 export const demoGenome: GenomeData = {
     length: 12000,
