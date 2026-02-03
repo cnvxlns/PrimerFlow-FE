@@ -207,7 +207,7 @@ export const analyzeGenome = async (
 
   console.log("🚀 Sending Payload:", payload);
 
-  const response = await api.post<PrimerDesignResponse>("/api/v1/primer/design", payload);
+  const response = await api.post<PrimerDesignResponse>("/primer/design", payload);
   const rawData = response.data;
 
   const transformed = toUiResponse(rawData);

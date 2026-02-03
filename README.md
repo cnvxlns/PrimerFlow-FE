@@ -76,8 +76,7 @@ cd PrimerFlow-FE
 npm install
 
 # 4. 환경 변수 설정 (.env.local 생성)
-# (백엔드 API 주소 설정 예시)
-# echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
+# 현재는 별도 API 기본 URL이 필요하지 않습니다. 파일은 비워 두거나 로컬 오버라이드용으로만 사용하세요.
 
 # 5. 개발 서버 실행
 npm run dev
