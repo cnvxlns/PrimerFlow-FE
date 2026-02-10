@@ -1,6 +1,10 @@
 "use client";
 
 import GenomeCanvas from "@/components/canvas/GenomeCanvas";
+import {
+    createPrefixSums,
+    getVisibleRange,
+} from "@/lib/algorithms/visibleRange";
 import { createBpScale } from "@/lib/math/coords";
 import type { GenomeCanvasViewState, GenomeData } from "@/types";
 import { ShieldCheck } from "lucide-react";
@@ -226,12 +230,51 @@ export default function Step4SpecificityPreview({
                                     ctx.stroke();
                                 }
 
-                                let y = trackStartY + viewState.offsetY;
-
                                 const tracks = Array.isArray(data.tracks) ? data.tracks : [];
+                                const trackHeights = tracks.map(
+                                    (track) => (track.height ?? 18) * layoutScale,
+                                );
+                                const rowHeights = trackHeights.map(
+                                    (trackHeight) => trackHeight + trackGap,
+                                );
+                                const prefixSums = createPrefixSums(rowHeights);
+                                const totalTracksHeight =
+                                    prefixSums[prefixSums.length - 1] ?? 0;
+                                const trackLayerTop = trackStartY + viewState.offsetY;
+                                const trackLayerBottom = trackLayerTop + totalTracksHeight;
 
-                                tracks.forEach((track) => {
-                                    const trackHeight = (track.height ?? 18) * layoutScale;
+                                if (
+                                    tracks.length === 0 ||
+                                    trackLayerBottom <= 0 ||
+                                    trackLayerTop >= viewport.height
+                                ) {
+                                    return;
+                                }
+
+                                const visibleViewportHeight = Math.max(
+                                    0,
+                                    viewport.height - Math.max(trackLayerTop, 0),
+                                );
+                                const visibleScrollTop = Math.max(0, -trackLayerTop);
+                                const { startIndex, endIndex } = getVisibleRange(
+                                    prefixSums,
+                                    visibleViewportHeight,
+                                    1,
+                                    visibleScrollTop,
+                                );
+
+                                if (endIndex < startIndex) return;
+
+                                for (
+                                    let trackIndex = startIndex;
+                                    trackIndex <= endIndex;
+                                    trackIndex += 1
+                                ) {
+                                    const track = tracks[trackIndex];
+                                    if (!track) continue;
+
+                                    const trackHeight = trackHeights[trackIndex] ?? 0;
+                                    const y = trackLayerTop + prefixSums[trackIndex];
 
                                     ctx.fillStyle = "#a5b4d8";
                                     ctx.font = `${12 * layoutScale}px ui-sans-serif, system-ui`;
@@ -308,9 +351,7 @@ export default function Step4SpecificityPreview({
                                             );
                                         }
                                     });
-
-                                    y += trackHeight + trackGap;
-                                });
+                                }
                             }}
                         />
                     </div>
