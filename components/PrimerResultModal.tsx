@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import GenomeCanvas from "./canvas/GenomeCanvas";
+import { createFocusedPrimerViewState } from "@/lib/algorithms/focusViewState";
 import type {
   GenomeCanvasViewState,
   GenomeData,
@@ -18,30 +19,26 @@ interface PrimerResultModalProps {
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 50;
 const ZOOM_STEP = 1.2;
+const CANVAS_PADDING_X = 20;
 
-const createInitialViewState = (): GenomeCanvasViewState => ({
-    scale: 1,
-    offsetX: 0,
-    offsetY: 0,
-});
+interface PrimerResultCanvasPanelProps {
+    apiResult: PrimerDesignResponseUI | null;
+    genome: GenomeData;
+    onClose: () => void;
+    initialViewState: GenomeCanvasViewState;
+    canvasShellRef: RefObject<HTMLDivElement | null>;
+}
 
 const clampScaleValue = (scale: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
 
-export default function PrimerResultModal({
-    isOpen,
+function PrimerResultCanvasPanel({
     apiResult,
     genome,
     onClose,
-}: PrimerResultModalProps) {
-    const [viewState, setViewState] = useState<GenomeCanvasViewState>(createInitialViewState());
-
-    useEffect(() => {
-        if (isOpen) {
-            setViewState(createInitialViewState());
-        }
-    }, [isOpen, genome]);
-
-    if (!isOpen || !genome) return null;
+    initialViewState,
+    canvasShellRef,
+}: PrimerResultCanvasPanelProps) {
+    const [viewState, setViewState] = useState<GenomeCanvasViewState>(initialViewState);
 
     const handleZoomIn = () =>
         setViewState((prev) => ({
@@ -55,7 +52,7 @@ export default function PrimerResultModal({
             scale: clampScaleValue(prev.scale / ZOOM_STEP),
         }));
 
-    const handleReset = () => setViewState(createInitialViewState());
+    const handleReset = () => setViewState(initialViewState);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6">
@@ -111,7 +108,10 @@ export default function PrimerResultModal({
                         </div>
                     </div>
 
-                    <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-[#0a1428] to-[#0c1223] p-4">
+                    <div
+                        ref={canvasShellRef}
+                        className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-[#0a1428] to-[#0c1223] p-4"
+                    >
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,#1e2b4c,transparent_40%),radial-gradient(circle_at_80%_30%,#0f1b34,transparent_45%)] opacity-60" />
                         <GenomeCanvas
                             genome={genome}
@@ -129,7 +129,7 @@ export default function PrimerResultModal({
                                 ctx.fillStyle = "#0c1222";
                                 ctx.fillRect(0, 0, viewport.width, viewport.height);
 
-                                const paddingX = 20;
+                                const paddingX = CANVAS_PADDING_X;
                                 const layoutScale = Math.min(
                                     1.4,
                                     Math.max(1, viewport.height / 400),
@@ -268,5 +268,107 @@ export default function PrimerResultModal({
                 </div>
             </div>
         </div>
+    );
+}
+
+const createInitialViewState = (): GenomeCanvasViewState => ({
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
+});
+
+export default function PrimerResultModal({
+    isOpen,
+    apiResult,
+    genome,
+    onClose,
+}: PrimerResultModalProps) {
+    const canvasShellRef = useRef<HTMLDivElement | null>(null);
+    const [canvasWidth, setCanvasWidth] = useState(() =>
+        typeof window === "undefined" ? 960 : Math.max(320, Math.floor(window.innerWidth * 0.72)),
+    );
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const { body, documentElement } = document;
+        const previousBodyOverflow = body.style.overflow;
+        const previousBodyPaddingRight = body.style.paddingRight;
+        const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
+        const previousHtmlOverflow = documentElement.style.overflow;
+        const previousHtmlOverscrollBehavior = documentElement.style.overscrollBehavior;
+
+        const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
+        body.style.overflow = "hidden";
+        body.style.overscrollBehavior = "none";
+        documentElement.style.overflow = "hidden";
+        documentElement.style.overscrollBehavior = "none";
+
+        if (scrollbarWidth > 0) {
+            body.style.paddingRight = `${scrollbarWidth}px`;
+        }
+
+        return () => {
+            body.style.overflow = previousBodyOverflow;
+            body.style.paddingRight = previousBodyPaddingRight;
+            body.style.overscrollBehavior = previousBodyOverscrollBehavior;
+            documentElement.style.overflow = previousHtmlOverflow;
+            documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
+        };
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const element = canvasShellRef.current;
+        if (!element) return;
+
+        const updateCanvasWidth = () => {
+            setCanvasWidth(element.clientWidth);
+        };
+
+        updateCanvasWidth();
+
+        const resizeObserver = new ResizeObserver(() => {
+            updateCanvasWidth();
+        });
+
+        resizeObserver.observe(element);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [isOpen]);
+
+    const fittedInitialViewState = useMemo(() => {
+        if (!genome) return createInitialViewState();
+
+        return createFocusedPrimerViewState({
+            genome,
+            viewportWidth: canvasWidth,
+            minScale: MIN_SCALE,
+            maxScale: MAX_SCALE,
+            paddingX: CANVAS_PADDING_X,
+        });
+    }, [canvasWidth, genome]);
+
+    if (!isOpen || !genome) return null;
+
+    const featureCount = genome.tracks.reduce(
+        (count, track) => count + (Array.isArray(track.features) ? track.features.length : 0),
+        0,
+    );
+
+    const viewStateKey = `${genome.length}-${genome.tracks.length}-${featureCount}-${Math.round(canvasWidth)}`;
+
+    return (
+        <PrimerResultCanvasPanel
+            key={viewStateKey}
+            apiResult={apiResult}
+            genome={genome}
+            onClose={onClose}
+            initialViewState={fittedInitialViewState}
+            canvasShellRef={canvasShellRef}
+        />
     );
 }

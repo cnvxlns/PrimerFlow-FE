@@ -1,24 +1,109 @@
 "use client";
 
-import { type ChangeEvent, useMemo, useRef } from "react";
+import {
+    type ClipboardEvent,
+    type ChangeEvent,
+    type MutableRefObject,
+    useEffect,
+    useRef,
+    useState,
+} from "react";
 import { SlidersHorizontal } from "lucide-react";
-import TextareaAutosize from "react-textarea-autosize";
 
 type Step1TemplateEssentialProps = {
-    sequence: string;
-    onSequenceChange: (value: string) => void;
+    sequenceRef: MutableRefObject<string>;
+};
+
+const countAlphabeticChars = (value: string) => {
+    let count = 0;
+
+    for (let index = 0; index < value.length; index += 1) {
+        const code = value.charCodeAt(index);
+        const isUpperCase = code >= 65 && code <= 90;
+        const isLowerCase = code >= 97 && code <= 122;
+
+        if (isUpperCase || isLowerCase) {
+            count += 1;
+        }
+    }
+
+    return count;
+};
+
+const LARGE_SEQUENCE_THRESHOLD = 50_000;
+const COUNT_DELAY_SMALL_MS = 80;
+const COUNT_DELAY_LARGE_MS = 240;
+const MAX_EDITOR_CHARS = 30_000;
+const PREVIEW_HEAD_CHARS = 1_200;
+const PREVIEW_TAIL_CHARS = 1_200;
+
+const getPreviewValue = (value: string) => {
+    if (value.length <= MAX_EDITOR_CHARS) return value;
+
+    const head = value.slice(0, PREVIEW_HEAD_CHARS);
+    const tail = value.slice(-PREVIEW_TAIL_CHARS);
+
+    return `${head}\n\n...[large sequence preview: ${value.length.toLocaleString()} chars total]...\n\n${tail}`;
 };
 
 export default function Step1TemplateEssential({
-    sequence,
-    onSequenceChange,
+    sequenceRef,
 }: Step1TemplateEssentialProps) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const countTimeoutRef = useRef<number | null>(null);
+    const [isLargeSequenceMode, setIsLargeSequenceMode] = useState(
+        sequenceRef.current.length > MAX_EDITOR_CHARS,
+    );
+    const [basePairCount, setBasePairCount] = useState(() =>
+        countAlphabeticChars(sequenceRef.current),
+    );
 
-    const basePairCount = useMemo(
-        () => sequence.replace(/[^A-Za-z]/g, "").length,
-        [sequence],
+    const clearPendingCountTimer = () => {
+        if (countTimeoutRef.current !== null) {
+            window.clearTimeout(countTimeoutRef.current);
+            countTimeoutRef.current = null;
+        }
+    };
+
+    const scheduleCount = (value: string) => {
+        clearPendingCountTimer();
+        const delay =
+            value.length >= LARGE_SEQUENCE_THRESHOLD
+                ? COUNT_DELAY_LARGE_MS
+                : COUNT_DELAY_SMALL_MS;
+
+        countTimeoutRef.current = window.setTimeout(() => {
+            setBasePairCount(countAlphabeticChars(value));
+            countTimeoutRef.current = null;
+        }, delay);
+    };
+
+    const updateSequence = (value: string, countMode: "defer" | "immediate" = "defer") => {
+        sequenceRef.current = value;
+        const nextIsLargeSequence = value.length > MAX_EDITOR_CHARS;
+        setIsLargeSequenceMode(nextIsLargeSequence);
+
+        if (textareaRef.current) {
+            const nextEditorValue = nextIsLargeSequence ? getPreviewValue(value) : value;
+            if (textareaRef.current.value !== nextEditorValue) {
+                textareaRef.current.value = nextEditorValue;
+            }
+        }
+
+        if (countMode === "immediate") {
+            clearPendingCountTimer();
+            setBasePairCount(countAlphabeticChars(value));
+            return;
+        }
+        scheduleCount(value);
+    };
+
+    useEffect(
+        () => () => {
+            clearPendingCountTimer();
+        },
+        [],
     );
 
     const focusTextarea = () => textareaRef.current?.focus();
@@ -31,7 +116,10 @@ export default function Step1TemplateEssential({
             return;
         }
 
-        onSequenceChange(sequence ? `${sequence}\n${sanitized}` : sanitized);
+        const currentValue = sequenceRef.current;
+        const appendedValue = currentValue ? `${currentValue}\n${sanitized}` : sanitized;
+
+        updateSequence(appendedValue, "immediate");
         focusTextarea();
     };
 
@@ -66,8 +154,31 @@ export default function Step1TemplateEssential({
         }
     };
 
+    const handleTextareaPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+        event.preventDefault();
+
+        const pastedText = event.clipboardData.getData("text");
+        if (!pastedText) return;
+
+        const currentValue = sequenceRef.current;
+        const selectionStart = event.currentTarget.selectionStart ?? currentValue.length;
+        const selectionEnd = event.currentTarget.selectionEnd ?? currentValue.length;
+        const nextValue =
+            currentValue.slice(0, selectionStart) +
+            pastedText +
+            currentValue.slice(selectionEnd);
+
+        updateSequence(nextValue, "immediate");
+
+        if (textareaRef.current && nextValue.length <= MAX_EDITOR_CHARS) {
+            const cursor = selectionStart + pastedText.length;
+            textareaRef.current.selectionStart = cursor;
+            textareaRef.current.selectionEnd = cursor;
+        }
+    };
+
     const handleCleanClick = () => {
-        onSequenceChange("");
+        updateSequence("", "immediate");
         focusTextarea();
     };
 
@@ -96,17 +207,24 @@ export default function Step1TemplateEssential({
                             <span className="text-xs text-slate-500 font-mono">{basePairCount} bp</span>
                         </div>
                         <div className="relative flex-1">
-                            <TextareaAutosize
+                            <textarea
                                 ref={textareaRef}
-                                className="w-full min-h-[200px] resize-none overflow-y-auto rounded-lg border border-slate-800 bg-[#0b1224] text-white p-4 font-mono text-sm leading-relaxed focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-600 transition-colors"
+                                className="h-[320px] w-full resize-none overflow-y-auto rounded-lg border border-slate-800 bg-[#0b1224] p-4 font-mono text-sm leading-relaxed text-white transition-colors placeholder:text-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                 placeholder={">Seq1\nATGCGT..."}
                                 spellCheck={false}
-                                minRows={10}
-                                maxRows={20}
-                                value={sequence}
-                                onChange={(event) => onSequenceChange(event.target.value)}
+                                readOnly={isLargeSequenceMode}
+                                defaultValue={getPreviewValue(sequenceRef.current)}
+                                onChange={(event) => updateSequence(event.target.value)}
+                                onPaste={handleTextareaPaste}
                             />
                         </div>
+                        {isLargeSequenceMode && (
+                            <p className="mt-2 text-xs text-amber-300">
+                                Large sequence mode is enabled for stability. The full sequence is
+                                kept in memory and will be used for generation, but the editor
+                                shows only a preview.
+                            </p>
+                        )}
                     </label>
                     <div className="flex flex-wrap gap-2 justify-end">
                         <input

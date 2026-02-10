@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import PrimerResultModal from "@/components/PrimerResultModal";
 import {
     analyzeGenome,
@@ -61,8 +61,8 @@ export default function Home() {
     const handleZoomOut = () =>
         setViewState({ ...viewState, scale: clampScale(viewState.scale / zoomStep) });
 
+    const sequenceInputRef = useRef("");
     const [resultGenome, setResultGenome] = useState<GenomeData | null>(null);
-    const [sequenceInput, setSequenceInput] = useState("");
 
     const steps = [
         { id: 1, label: "Template & Essential" },
@@ -93,9 +93,10 @@ export default function Home() {
     );
 
     const handleGenerate = async () => {
+        const inputSequence = sequenceInputRef.current;
         const targetSeq =
-            sequenceInput && sequenceInput.trim().length > 0
-                ? sequenceInput.trim()
+            inputSequence && inputSequence.trim().length > 0
+                ? inputSequence.trim()
                 : "ATGCGTACGTAGCTAGCTAGCTAGCTAATGCGTACGTAGCTAGCTAGCTAGCTA";
         const payload: AnalyzeRequestInput = {
             target_sequence: targetSeq,
@@ -166,8 +167,7 @@ export default function Home() {
 
                 {step === 1 && (
                     <Step1TemplateEssential
-                        sequence={sequenceInput}
-                        onSequenceChange={setSequenceInput}
+                        sequenceRef={sequenceInputRef}
                     />
                 )}
 
