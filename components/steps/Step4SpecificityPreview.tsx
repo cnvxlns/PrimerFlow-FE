@@ -2,12 +2,16 @@
 
 import GenomeCanvas from "@/components/canvas/GenomeCanvas";
 import {
-    createPrefixSums,
     getVisibleRange,
 } from "@/lib/algorithms/visibleRange";
 import { createBpScale } from "@/lib/math/coords";
-import type { GenomeCanvasViewState, GenomeData } from "@/types";
+import type {
+    GenomeCanvasRenderState,
+    GenomeCanvasViewState,
+    GenomeData,
+} from "@/types";
 import { ShieldCheck } from "lucide-react";
+import { useCallback, useMemo, useRef } from "react";
 
 type Step4SpecificityPreviewProps = {
     genome: GenomeData;
@@ -36,6 +40,15 @@ const drawRoundedRect = (
     ctx.closePath();
 };
 
+type TrackLayoutMemo = {
+    baseTrackHeightsRef: number[];
+    layoutScale: number;
+    trackGap: number;
+    trackHeights: number[];
+    prefixSums: number[];
+    totalTracksHeight: number;
+};
+
 export default function Step4SpecificityPreview({
     genome,
     viewState,
@@ -44,6 +57,219 @@ export default function Step4SpecificityPreview({
     onZoomOut,
     onResetView,
 }: Step4SpecificityPreviewProps) {
+    const tracks = useMemo(
+        () => (Array.isArray(genome.tracks) ? genome.tracks : []),
+        [genome.tracks],
+    );
+    const baseTrackHeights = useMemo(
+        () => tracks.map((track) => track.height ?? 18),
+        [tracks],
+    );
+    const trackLayoutMemoRef = useRef<TrackLayoutMemo | null>(null);
+
+    const getTrackLayoutMemo = useCallback(
+        (layoutScale: number, trackGap: number) => {
+            const cached = trackLayoutMemoRef.current;
+            if (
+                cached &&
+                cached.baseTrackHeightsRef === baseTrackHeights &&
+                cached.layoutScale === layoutScale &&
+                cached.trackGap === trackGap
+            ) {
+                return cached;
+            }
+
+            const trackHeights = new Array(baseTrackHeights.length);
+            const prefixSums = new Array(baseTrackHeights.length + 1);
+            prefixSums[0] = 0;
+            const lastTrackIndex = baseTrackHeights.length - 1;
+
+            for (let index = 0; index < baseTrackHeights.length; index += 1) {
+                const trackHeight = baseTrackHeights[index] * layoutScale;
+                trackHeights[index] = trackHeight;
+                const gapAfterTrack = index === lastTrackIndex ? 0 : trackGap;
+                prefixSums[index + 1] = prefixSums[index] + trackHeight + gapAfterTrack;
+            }
+
+            const memoized: TrackLayoutMemo = {
+                baseTrackHeightsRef: baseTrackHeights,
+                layoutScale,
+                trackGap,
+                trackHeights,
+                prefixSums,
+                totalTracksHeight: prefixSums[prefixSums.length - 1] ?? 0,
+            };
+            trackLayoutMemoRef.current = memoized;
+
+            return memoized;
+        },
+        [baseTrackHeights],
+    );
+
+    const handleDraw = useCallback(
+        (
+            ctx: CanvasRenderingContext2D,
+            _canvas: HTMLCanvasElement,
+            renderState: GenomeCanvasRenderState,
+        ) => {
+            const { data, viewport, viewState: canvasViewState } = renderState;
+            if (!data) return;
+
+            const dpr = viewport.devicePixelRatio || 1;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            ctx.fillStyle = "#0c1222";
+            ctx.fillRect(0, 0, viewport.width, viewport.height);
+
+            const paddingX = 20;
+            const layoutScale = Math.min(1.4, Math.max(1, viewport.height / 400));
+
+            const headerY = 28 * layoutScale;
+            const trackStartY = 64 * layoutScale;
+            const trackGap = 28 * layoutScale;
+
+            const bpScale = createBpScale(
+                data.length,
+                viewport.width - paddingX * 2,
+                0,
+            );
+
+            const toScreenX = (bp: number) =>
+                paddingX +
+                canvasViewState.offsetX +
+                bpScale.bpToX(bp) * canvasViewState.scale;
+
+            const toScreenWidth = (start: number, end: number) => {
+                const rawWidth = bpScale.spanToWidth(start, end, 0) * canvasViewState.scale;
+                return Math.max(2, rawWidth);
+            };
+
+            ctx.fillStyle = "#e2e8f0";
+            ctx.font = `600 ${14 * layoutScale}px ui-sans-serif, system-ui`;
+            ctx.fillText(`Genome length`, paddingX, headerY - 6 * layoutScale);
+
+            ctx.fillStyle = "#9fb3d4";
+            ctx.font = `${12 * layoutScale}px ui-sans-serif, system-ui`;
+            ctx.fillText(
+                `${data.length.toLocaleString()} bp`,
+                paddingX,
+                headerY + 10 * layoutScale,
+            );
+
+            ctx.strokeStyle = "#1f2b3f";
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i += 1) {
+                const x = paddingX + i * ((viewport.width - paddingX * 2) / 10);
+                ctx.beginPath();
+                ctx.moveTo(x, trackStartY - 16 * layoutScale);
+                ctx.lineTo(x, viewport.height - 20);
+                ctx.stroke();
+            }
+
+            if (tracks.length === 0) return;
+
+            const { trackHeights, prefixSums, totalTracksHeight } = getTrackLayoutMemo(
+                layoutScale,
+                trackGap,
+            );
+            const trackLayerTop = trackStartY + canvasViewState.offsetY;
+            const trackLayerBottom = trackLayerTop + totalTracksHeight;
+
+            if (trackLayerBottom <= 0 || trackLayerTop >= viewport.height) return;
+
+            const visibleViewportHeight = Math.max(
+                0,
+                viewport.height - Math.max(trackLayerTop, 0),
+            );
+            const visibleScrollTop = Math.max(0, -trackLayerTop);
+            const { startIndex, endIndex } = getVisibleRange(
+                prefixSums,
+                visibleViewportHeight,
+                1,
+                visibleScrollTop,
+            );
+
+            if (endIndex < startIndex) return;
+
+            for (let trackIndex = startIndex; trackIndex <= endIndex; trackIndex += 1) {
+                const track = tracks[trackIndex];
+                if (!track) continue;
+
+                const trackHeight = trackHeights[trackIndex] ?? 0;
+                const y = trackLayerTop + prefixSums[trackIndex];
+
+                ctx.fillStyle = "#a5b4d8";
+                ctx.font = `${12 * layoutScale}px ui-sans-serif, system-ui`;
+                const trackLabel = track.name ?? track.id ?? "Track";
+                ctx.fillText(trackLabel, paddingX, y - 10 * layoutScale);
+
+                ctx.strokeStyle = "#23324a";
+                ctx.beginPath();
+                ctx.moveTo(paddingX, y + trackHeight / 2);
+                ctx.lineTo(
+                    viewport.width - paddingX,
+                    y + trackHeight / 2,
+                );
+                ctx.stroke();
+
+                const features = Array.isArray(track.features) ? track.features : [];
+
+                features.forEach((feature) => {
+                    const start = Number(feature.start ?? feature.start_bp ?? 0);
+                    const end = Number(feature.end ?? feature.end_bp ?? start);
+                    const x = toScreenX(start);
+                    const width = toScreenWidth(start, end);
+                    const radius = Math.min(6, trackHeight / 2);
+
+                    ctx.fillStyle = feature.color ?? "#38bdf8";
+                    drawRoundedRect(
+                        ctx,
+                        x,
+                        y,
+                        width,
+                        trackHeight,
+                        radius,
+                    );
+                    ctx.fill();
+
+                    const label = feature.label || feature.id || feature.name || "";
+
+                    if (label) {
+                        const labelPaddingX = 6 * layoutScale;
+                        const labelPaddingY = 3 * layoutScale;
+                        ctx.font = `600 ${11 * layoutScale}px ui-sans-serif, system-ui`;
+                        const metrics = ctx.measureText(label);
+                        const labelWidth = metrics.width + labelPaddingX * 2;
+                        const labelHeight = 16 * layoutScale + labelPaddingY;
+                        const labelX = x + 6 * layoutScale;
+                        const labelY = y + trackHeight + 6 * layoutScale;
+
+                        ctx.fillStyle = "rgba(15,23,42,0.9)";
+                        ctx.strokeStyle = "#1f2b3f";
+                        drawRoundedRect(
+                            ctx,
+                            labelX,
+                            labelY,
+                            labelWidth,
+                            labelHeight,
+                            6 * layoutScale,
+                        );
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.fillStyle = "#e2e8f0";
+                        ctx.fillText(
+                            label,
+                            labelX + labelPaddingX,
+                            labelY + 12 * layoutScale,
+                        );
+                    }
+                });
+            }
+        },
+        [getTrackLayoutMemo, tracks],
+    );
+
     return (
         <section className="flex flex-col gap-4">
             <div className="rounded-xl border border-slate-800/70 bg-slate-900/80 px-4 py-3 text-base font-bold text-slate-300">
@@ -168,191 +394,7 @@ export default function Step4SpecificityPreview({
                             onViewStateChange={onViewStateChange}
                             className="w-full"
                             style={{ height: "450px" }}
-                            onDraw={(ctx, _canvas, renderState) => {
-                                const { data, viewport, viewState } = renderState;
-                                if (!data) return;
-
-                                const dpr = viewport.devicePixelRatio || 1;
-                                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-                                ctx.fillStyle = "#0c1222";
-                                ctx.fillRect(0, 0, viewport.width, viewport.height);
-
-                                const paddingX = 20;
-                                const layoutScale = Math.min(
-                                    1.4,
-                                    Math.max(1, viewport.height / 400),
-                                );
-
-                                const headerY = 28 * layoutScale;
-                                const trackStartY = 64 * layoutScale;
-                                const trackGap = 28 * layoutScale;
-
-                                const bpScale = createBpScale(
-                                    data.length,
-                                    viewport.width - paddingX * 2,
-                                    0,
-                                );
-
-                                const toScreenX = (bp: number) =>
-                                    paddingX +
-                                    viewState.offsetX +
-                                    bpScale.bpToX(bp) * viewState.scale;
-
-                                const toScreenWidth = (start: number, end: number) => {
-                                    const rawWidth =
-                                        bpScale.spanToWidth(start, end, 0) *
-                                        viewState.scale;
-                                    return Math.max(2, rawWidth);
-                                };
-
-                                ctx.fillStyle = "#e2e8f0";
-                                ctx.font = `600 ${14 * layoutScale}px ui-sans-serif, system-ui`;
-                                ctx.fillText(`Genome length`, paddingX, headerY - 6 * layoutScale);
-
-                                ctx.fillStyle = "#9fb3d4";
-                                ctx.font = `${12 * layoutScale}px ui-sans-serif, system-ui`;
-                                ctx.fillText(
-                                    `${data.length.toLocaleString()} bp`,
-                                    paddingX,
-                                    headerY + 10 * layoutScale,
-                                );
-
-                                ctx.strokeStyle = "#1f2b3f";
-                                ctx.lineWidth = 1;
-                                for (let i = 0; i <= 10; i += 1) {
-                                    const x =
-                                        paddingX +
-                                        i * ((viewport.width - paddingX * 2) / 10);
-                                    ctx.beginPath();
-                                    ctx.moveTo(x, trackStartY - 16 * layoutScale);
-                                    ctx.lineTo(x, viewport.height - 20);
-                                    ctx.stroke();
-                                }
-
-                                const tracks = Array.isArray(data.tracks) ? data.tracks : [];
-                                const trackHeights = tracks.map(
-                                    (track) => (track.height ?? 18) * layoutScale,
-                                );
-                                const rowHeights = trackHeights.map(
-                                    (trackHeight) => trackHeight + trackGap,
-                                );
-                                const prefixSums = createPrefixSums(rowHeights);
-                                const totalTracksHeight =
-                                    prefixSums[prefixSums.length - 1] ?? 0;
-                                const trackLayerTop = trackStartY + viewState.offsetY;
-                                const trackLayerBottom = trackLayerTop + totalTracksHeight;
-
-                                if (
-                                    tracks.length === 0 ||
-                                    trackLayerBottom <= 0 ||
-                                    trackLayerTop >= viewport.height
-                                ) {
-                                    return;
-                                }
-
-                                const visibleViewportHeight = Math.max(
-                                    0,
-                                    viewport.height - Math.max(trackLayerTop, 0),
-                                );
-                                const visibleScrollTop = Math.max(0, -trackLayerTop);
-                                const { startIndex, endIndex } = getVisibleRange(
-                                    prefixSums,
-                                    visibleViewportHeight,
-                                    1,
-                                    visibleScrollTop,
-                                );
-
-                                if (endIndex < startIndex) return;
-
-                                for (
-                                    let trackIndex = startIndex;
-                                    trackIndex <= endIndex;
-                                    trackIndex += 1
-                                ) {
-                                    const track = tracks[trackIndex];
-                                    if (!track) continue;
-
-                                    const trackHeight = trackHeights[trackIndex] ?? 0;
-                                    const y = trackLayerTop + prefixSums[trackIndex];
-
-                                    ctx.fillStyle = "#a5b4d8";
-                                    ctx.font = `${12 * layoutScale}px ui-sans-serif, system-ui`;
-                                    const trackLabel = track.name ?? track.id ?? "Track";
-                                    ctx.fillText(trackLabel, paddingX, y - 10 * layoutScale);
-
-                                    ctx.strokeStyle = "#23324a";
-                                    ctx.beginPath();
-                                    ctx.moveTo(paddingX, y + trackHeight / 2);
-                                    ctx.lineTo(
-                                        viewport.width - paddingX,
-                                        y + trackHeight / 2,
-                                    );
-                                    ctx.stroke();
-
-                                    const features = Array.isArray(track.features)
-                                        ? track.features
-                                        : [];
-
-                                    features.forEach((feature) => {
-                                        const start = Number(feature.start ?? feature.start_bp ?? 0);
-                                        const end = Number(feature.end ?? feature.end_bp ?? start);
-                                        const x = toScreenX(start);
-                                        const width = toScreenWidth(start, end);
-                                        const radius = Math.min(6, trackHeight / 2);
-
-                                        ctx.fillStyle = feature.color ?? "#38bdf8";
-                                        drawRoundedRect(
-                                            ctx,
-                                            x,
-                                            y,
-                                            width,
-                                            trackHeight,
-                                            radius,
-                                        );
-                                        ctx.fill();
-
-                                        const label =
-                                            feature.label ||
-                                            feature.id ||
-                                            feature.name ||
-                                            "";
-
-                                        if (label) {
-                                            const labelPaddingX = 6 * layoutScale;
-                                            const labelPaddingY = 3 * layoutScale;
-                                            ctx.font = `600 ${11 * layoutScale}px ui-sans-serif, system-ui`;
-                                            const metrics = ctx.measureText(label);
-                                            const labelWidth =
-                                                metrics.width + labelPaddingX * 2;
-                                            const labelHeight =
-                                                16 * layoutScale + labelPaddingY;
-                                            const labelX = x + 6 * layoutScale;
-                                            const labelY = y + trackHeight + 6 * layoutScale;
-
-                                            ctx.fillStyle = "rgba(15,23,42,0.9)";
-                                            ctx.strokeStyle = "#1f2b3f";
-                                            drawRoundedRect(
-                                                ctx,
-                                                labelX,
-                                                labelY,
-                                                labelWidth,
-                                                labelHeight,
-                                                6 * layoutScale,
-                                            );
-                                            ctx.fill();
-                                            ctx.stroke();
-
-                                            ctx.fillStyle = "#e2e8f0";
-                                            ctx.fillText(
-                                                label,
-                                                labelX + labelPaddingX,
-                                                labelY + 12 * layoutScale,
-                                            );
-                                        }
-                                    });
-                                }
-                            }}
+                            onDraw={handleDraw}
                         />
                     </div>
                 </div>

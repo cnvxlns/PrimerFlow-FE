@@ -12,6 +12,7 @@ type FocusedViewStateOptions = {
   maxScale: number;
   paddingX?: number;
   fillRatio?: number;
+  fallbackScale?: number;
 };
 
 const DEFAULT_PADDING_X = 20;
@@ -100,10 +101,17 @@ export const createFocusedPrimerViewState = ({
   maxScale,
   paddingX = DEFAULT_PADDING_X,
   fillRatio = DEFAULT_FILL_RATIO,
+  fallbackScale = 1,
 }: FocusedViewStateOptions): GenomeCanvasViewState => {
+  const safeMinScale = Math.min(minScale, maxScale);
+  const safeMaxScale = Math.max(minScale, maxScale);
   const focusRange = findPrimerFocusRange(genome);
   if (!focusRange) {
-    return { scale: 1, offsetX: 0, offsetY: 0 };
+    return {
+      scale: clamp(fallbackScale, safeMinScale, safeMaxScale),
+      offsetX: 0,
+      offsetY: 0,
+    };
   }
 
   const safeLength = Math.max(1, genome.length);
@@ -112,7 +120,7 @@ export const createFocusedPrimerViewState = ({
   const span = Math.max(1, focusRange.end - focusRange.start);
   const centerBp = (focusRange.start + focusRange.end) / 2;
 
-  const scale = clamp((safeLength / span) * safeFillRatio, minScale, maxScale);
+  const scale = clamp((safeLength / span) * safeFillRatio, safeMinScale, safeMaxScale);
   const offsetX = drawableWidth / 2 - (centerBp / safeLength) * drawableWidth * scale;
 
   return {
