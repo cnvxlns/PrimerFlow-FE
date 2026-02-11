@@ -196,7 +196,7 @@ export default function Step1TemplateEssential({
 
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] items-start">
                 <div className="flex flex-col rounded-xl border border-slate-800/70 bg-slate-900/70 overflow-hidden shadow-lg shadow-black/20">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-[#161920]">
+                <div className="flex items-center justify-between px-5 py-2 border-b border-slate-800 bg-[#161920]">
                     <div className="flex items-center gap-2">
                         <h3 className="text-white text-lg font-bold">PCR Template Sequence</h3>
                     </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 type WizardStep = {
     id: number;
     label: string;
@@ -24,24 +26,29 @@ export default function WizardHeader({
 }: WizardHeaderProps) {
     return (
         <header className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/15 text-sm font-semibold uppercase tracking-[0.14em] text-blue-100 ring-1 ring-blue-500/30">
-                        PF
+                    <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-blue-500/15 ring-1 ring-blue-500/30">
+                        <Image
+                            src="/primer.jpg"
+                            alt="PrimerFlow"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                            Primerflow Lab
-                        </span>
-                        <h1
-                            className="text-3xl font-semibold text-white md:text-4xl"
-                            style={{ fontFamily: "var(--font-display)" }}
-                        >
-                            Primer Design Input
-                        </h1>
-                        <p className="text-sm text-slate-400 font-semibold">
-                            demodesign 흐름을 따라 입력 -&gt; 특성 -&gt; 위치 -&gt; 특이성/미리보기 순으로 진행합니다.
-                        </p>
+                        <div className="flex items-baseline gap-2">
+                            <h1
+                                className="text-3xl font-semibold text-white md:text-4xl"
+                                style={{ fontFamily: "var(--font-poppins)" }}
+                            >
+                                Primer Designer
+                            </h1>
+                            <span className="hidden sm:inline text-xs font-semibold text-slate-400">
+                                by SeqLab
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -66,17 +73,17 @@ export default function WizardHeader({
                         const isUnlocked = item.id <= step;
                         const circle =
                             status === "active"
-                                ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-900/40"
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
                                 : status === "done"
-                                  ? "bg-blue-500 border-blue-500 text-white"
-                                  : "bg-slate-900 border-slate-800 text-slate-500";
+                                ? "bg-blue-500 text-white"
+                                : "bg-slate-900 text-slate-500";
 
                         return (
                             <div key={item.id} className="flex flex-col items-center gap-2">
                                 <button
                                     type="button"
                                     onClick={() => isUnlocked && onStepChange(item.id)}
-                                    className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full border text-sm font-bold transition ${
+                                    className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold transition ${
                                         isUnlocked
                                             ? circle
                                             : `${circle} cursor-not-allowed opacity-60`
