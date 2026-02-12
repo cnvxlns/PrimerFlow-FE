@@ -399,39 +399,6 @@ export default function Step4SpecificityPreview({
                     </div>
                 </div>
             </div>
-
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 p-5 shadow-xl shadow-black/30">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                            Quality notes
-                        </p>
-                        <h4
-                            className="text-lg font-semibold text-white"
-                            style={{ fontFamily: "var(--font-display)" }}
-                        >
-                            Quick health check
-                        </h4>
-                    </div>
-                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-100">
-                        Stable
-                    </span>
-                </div>
-                <ul className="mt-4 space-y-3 text-sm text-slate-300">
-                    <li className="flex items-start gap-2">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-emerald-400" />
-                        Primer candidates are spaced to avoid overlap with target amplicon.
-                    </li>
-                    <li className="flex items-start gap-2">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-blue-400" />
-                        Zoom 상태와 오프셋은 결과 단계에서만 노출됩니다.
-                    </li>
-                    <li className="flex items-start gap-2">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-amber-400" />
-                        단계 전환은 상단 스텝 원형 인디케이터와 하단 버튼으로 진행합니다.
-                    </li>
-                </ul>
-            </div>
         </section>
     );
 }
