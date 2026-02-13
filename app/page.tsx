@@ -16,33 +16,14 @@ import Step4SpecificityPreview from "@/components/steps/Step4SpecificityPreview"
 import WizardFooterNav from "@/components/ui/WizardFooterNav";
 import WizardHeader from "@/components/ui/WizardHeader";
 
-const isGenomeFeature = (feature: any) =>
-    feature &&
-    typeof feature.start === "number" &&
-    typeof feature.end === "number" &&
-    feature.start <= feature.end;
-
-const isGenomeData = (data: any): data is GenomeData =>
-    data &&
-    typeof data.length === "number" &&
-    Array.isArray(data.tracks) &&
-    data.tracks.every(
-        (track: any) =>
-            track &&
-            typeof track.id === "string" &&
-            Array.isArray(track.features) &&
-            track.features.every(isGenomeFeature),
-    );
-
 const toGenomeDataFromResponse = (response: PrimerDesignResponseUI | null): GenomeData | null => {
     if (!response?.genome) return null;
-    const g = response.genome as any;
     const length =
-        g.length ??
-        g.length_bp ??
-        g.sequence?.length ??
+        response.genome.length ??
+        response.genome.length_bp ??
+        response.genome.sequence?.length ??
         0;
-    const tracks = Array.isArray(g.tracks) ? g.tracks : [];
+    const tracks = response.genome.tracks ?? [];
     return { length, tracks };
 };
 
