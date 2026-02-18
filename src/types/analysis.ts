@@ -56,7 +56,7 @@ export interface GenomeSequence {
   // Some responses may provide total length as `length`; keep optional for compatibility.
   length?: number;
   // UI helper fields (optional)
-  tracks?: any[];
+  tracks?: unknown[];
 }
 
 export interface PrimerCandidate {
@@ -68,7 +68,7 @@ export interface PrimerCandidate {
   metrics: {
     tm_c?: number;
     gc_percent?: number;
-    penalties?: any;
+    penalties?: unknown;
   };
 }
 

@@ -73,7 +73,7 @@ git clone [https://github.com/Seq-Lab/PrimerFlow-FE.git](https://github.com/Seq-
 cd PrimerFlow-FE
 
 # 3. 패키지 설치
-npm install
+npm ci
 
 # 4. 환경 변수 설정 (.env.local 생성)
 - `.env.example` 파일을 복사하여 `.env.local`을 생성하세요.

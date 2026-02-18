@@ -7,6 +7,9 @@ import type {
   UIGenome,
 } from "@/types";
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
 // Flat input from UI (kept flexible)
 export interface AnalyzeRequestInput {
   target_sequence?: string;
@@ -110,22 +113,35 @@ const toPrimerDesignRequest = (input: AnalyzeRequestInput): PrimerDesignRequest 
 
 // Normalize genome and candidates for UI (tracks + start/end/color)
 const toUiResponse = (raw: PrimerDesignResponse): PrimerDesignResponseUI => {
-  const genome = raw.genome || ({} as any);
+  const genome = raw.genome;
   const length = genome.length_bp ?? genome.length ?? genome.sequence?.length ?? 0;
 
   const baseTracks =
     Array.isArray(genome.tracks) && genome.tracks.length
-      ? genome.tracks.map((t: any, idx: number) => {
-          const start = Number(t.start ?? t.start_bp ?? 0);
-          const end = Number(t.end ?? t.end_bp ?? start);
-          const label = t.label || t.name || t.type || `Track ${idx + 1}`;
-          const color = t.color || (t.type === "target_region" ? "#3b82f6" : "#94a3b8");
+      ? genome.tracks
+          .map((item, idx: number) => {
+            if (!isRecord(item)) return null;
+
+            const start = Number(item.start ?? item.start_bp ?? 0);
+            const end = Number(item.end ?? item.end_bp ?? start);
+            const label =
+              (typeof item.label === "string" && item.label) ||
+              (typeof item.name === "string" && item.name) ||
+              (typeof item.type === "string" && item.type) ||
+              `Track ${idx + 1}`;
+            const color =
+              (typeof item.color === "string" && item.color) ||
+              (item.type === "target_region" ? "#3b82f6" : "#94a3b8");
+
           return {
-            id: t.id || t.type || `track-${idx}`,
+            id:
+              (typeof item.id === "string" && item.id) ||
+              (typeof item.type === "string" && item.type) ||
+              `track-${idx}`,
             name: label,
             features: [
               {
-                id: t.id || `feature-${idx}`,
+                id: (typeof item.id === "string" && item.id) || `feature-${idx}`,
                 start,
                 end,
                 label,
@@ -133,15 +149,16 @@ const toUiResponse = (raw: PrimerDesignResponse): PrimerDesignResponseUI => {
               },
             ],
           };
-        })
+          })
+          .filter((track): track is NonNullable<typeof track> => track != null)
       : [];
 
   const uiCandidates: UIPrimerCandidate[] = (raw.candidates || []).map((c, idx) => {
     const isForward = c.strand === "forward";
     return {
       ...c,
-      start: Number((c as any).start ?? c.start_bp ?? 0),
-      end: Number((c as any).end ?? c.end_bp ?? 0),
+      start: Number(c.start_bp ?? 0),
+      end: Number(c.end_bp ?? 0),
       label: c.id || `Primer ${idx + 1}`,
       type: "primer",
       color: isForward ? "#2196F3" : "#4CAF50",
