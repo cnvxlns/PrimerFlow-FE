@@ -72,6 +72,20 @@ export default function Home() {
             setStep1WarningMessage(null);
         }
     };
+
+    const reportStep1ValidationMessage = (
+        mode: "step-transition" | "generate",
+        message: string | null,
+    ) => {
+        // Step 전환 검증은 Step1 인라인 경고를 사용하고,
+        // Generate 직전 검증은 하단 error banner를 사용해 중복 노출을 피한다.
+        if (mode === "step-transition") {
+            setStep1WarningMessage(message);
+            return;
+        }
+        setErrorMessage(message);
+    };
+
     const validateStep1Sequence = (mode: "step-transition" | "generate") => {
         const rawInputSequence = sequenceInputRef.current;
         const normalizedSequence = normalizeStep1TemplateSequence(rawInputSequence);
@@ -81,23 +95,17 @@ export default function Home() {
                 // Generate 직전 검증: 입력이 있었는데 정규화 후 빈 문자열이면 요청 중단.
                 const warningMessage =
                     "전송할 수 있는 유효한 염기서열이 없습니다. A, T, G, C 문자만 입력해 주세요.";
-                setStep1WarningMessage(warningMessage);
-                setErrorMessage(warningMessage);
-                alert(warningMessage);
+                reportStep1ValidationMessage(mode, warningMessage);
                 return { isValid: false, normalizedSequence };
             }
 
             // 단계 이동 검증: Step1 경고를 초기화하고 다음 동작 진행.
-            setStep1WarningMessage(null);
+            reportStep1ValidationMessage(mode, null);
             return { isValid: true, normalizedSequence };
         }
 
         const warningMessage = `대소문자 구분 없이 A, T, G, C만 입력 가능합니다. 잘못된 문자를 제거해 주세요.`;
-        setStep1WarningMessage(warningMessage);
-        if (mode === "generate") {
-            setErrorMessage(warningMessage);
-        }
-        alert(warningMessage);
+        reportStep1ValidationMessage(mode, warningMessage);
         return { isValid: false, normalizedSequence };
     };
     const handleNext = () => {
