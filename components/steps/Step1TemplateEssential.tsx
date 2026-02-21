@@ -60,6 +60,7 @@ export default function Step1TemplateEssential({
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const countTimeoutRef = useRef<number | null>(null);
+    const allowNativePasteForNextChangeRef = useRef(false);
     const [isLargeSequenceMode, setIsLargeSequenceMode] = useState(
         sequenceRef.current.length > MAX_EDITOR_CHARS,
     );
@@ -208,14 +209,16 @@ export default function Step1TemplateEssential({
             return;
         }
 
-        event.preventDefault();
-
         const pastedText = event.clipboardData.getData("text");
         if (!pastedText) return;
         if (!confirmInvalidRemoval(pastedText)) {
+            // Allow one native paste change without sanitize so cancel keeps default behavior.
+            allowNativePasteForNextChangeRef.current = true;
             focusTextarea();
             return;
         }
+
+        event.preventDefault();
         insertSanitizedChunkAtSelection(event.currentTarget, pastedText);
     };
 
@@ -242,6 +245,16 @@ export default function Step1TemplateEssential({
 
     const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
         if (isLargeSequenceMode || event.currentTarget.readOnly) return;
+        const nativeEvent = event.nativeEvent as InputEvent;
+        if (
+            allowNativePasteForNextChangeRef.current &&
+            nativeEvent.inputType === "insertFromPaste"
+        ) {
+            allowNativePasteForNextChangeRef.current = false;
+            updateSequence(event.currentTarget.value);
+            return;
+        }
+        allowNativePasteForNextChangeRef.current = false;
         updateSequence(sanitizeStep1TemplateSequenceInput(event.currentTarget.value));
     };
 
