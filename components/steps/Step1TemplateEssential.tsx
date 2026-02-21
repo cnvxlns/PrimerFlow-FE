@@ -3,13 +3,14 @@
 import {
     type ClipboardEvent,
     type ChangeEvent,
+    type FormEvent,
     type MutableRefObject,
     useEffect,
     useRef,
     useState,
 } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { toUpperCaseAtgcOnly } from "../../src/lib/parsers/step1TemplateSequence";
+import { sanitizeStep1TemplateSequenceInput } from "../../src/lib/parsers/step1TemplateSequence";
 
 type Step1TemplateEssentialProps = {
     sequenceRef: MutableRefObject<string>;
@@ -81,16 +82,13 @@ export default function Step1TemplateEssential({
     };
 
     const updateSequence = (value: string, countMode: "defer" | "immediate" = "defer") => {
-        const normalizedValue = toUpperCaseAtgcOnly(value);
-        sequenceRef.current = normalizedValue;
-        onSequenceChange?.(normalizedValue);
-        const nextIsLargeSequence = normalizedValue.length > MAX_EDITOR_CHARS;
+        sequenceRef.current = value;
+        onSequenceChange?.(value);
+        const nextIsLargeSequence = value.length > MAX_EDITOR_CHARS;
         setIsLargeSequenceMode(nextIsLargeSequence);
 
         if (textareaRef.current) {
-            const nextEditorValue = nextIsLargeSequence
-                ? getPreviewValue(normalizedValue)
-                : normalizedValue;
+            const nextEditorValue = nextIsLargeSequence ? getPreviewValue(value) : value;
             if (textareaRef.current.value !== nextEditorValue) {
                 textareaRef.current.value = nextEditorValue;
             }
@@ -98,10 +96,10 @@ export default function Step1TemplateEssential({
 
         if (countMode === "immediate") {
             clearPendingCountTimer();
-            setBasePairCount(countAlphabeticChars(normalizedValue));
+            setBasePairCount(countAlphabeticChars(value));
             return;
         }
-        scheduleCount(normalizedValue, nextIsLargeSequence);
+        scheduleCount(value, nextIsLargeSequence);
     };
 
     useEffect(
@@ -114,18 +112,41 @@ export default function Step1TemplateEssential({
     const focusTextarea = () => textareaRef.current?.focus();
 
     const appendSequence = (next: string) => {
-        const sanitized = next.trim();
-
-        if (!sanitized) {
+        const sanitizedChunk = sanitizeStep1TemplateSequenceInput(next);
+        if (!sanitizedChunk) {
             focusTextarea();
             return;
         }
 
         const currentValue = sequenceRef.current;
-        const appendedValue = currentValue ? `${currentValue}\n${sanitized}` : sanitized;
+        const appendedValue = `${currentValue}${sanitizedChunk}`;
 
         updateSequence(appendedValue, "immediate");
         focusTextarea();
+    };
+
+    const insertSanitizedChunkAtSelection = (
+        textarea: HTMLTextAreaElement,
+        rawChunk: string,
+    ) => {
+        const sanitizedChunk = sanitizeStep1TemplateSequenceInput(rawChunk);
+        const currentValue = sequenceRef.current;
+        const selectionStart = textarea.selectionStart ?? currentValue.length;
+        const selectionEnd = textarea.selectionEnd ?? currentValue.length;
+        const nextValue =
+            currentValue.slice(0, selectionStart) +
+            sanitizedChunk +
+            currentValue.slice(selectionEnd);
+
+        if (nextValue !== currentValue) {
+            updateSequence(nextValue, "immediate");
+        }
+
+        if (textareaRef.current && nextValue.length <= MAX_EDITOR_CHARS) {
+            const cursor = selectionStart + sanitizedChunk.length;
+            textareaRef.current.selectionStart = cursor;
+            textareaRef.current.selectionEnd = cursor;
+        }
     };
 
     const handleUploadClick = () => fileInputRef.current?.click();
@@ -169,22 +190,27 @@ export default function Step1TemplateEssential({
 
         const pastedText = event.clipboardData.getData("text");
         if (!pastedText) return;
+        insertSanitizedChunkAtSelection(event.currentTarget, pastedText);
+    };
 
-        const currentValue = sequenceRef.current;
-        const selectionStart = event.currentTarget.selectionStart ?? currentValue.length;
-        const selectionEnd = event.currentTarget.selectionEnd ?? currentValue.length;
-        const nextValue =
-            currentValue.slice(0, selectionStart) +
-            pastedText +
-            currentValue.slice(selectionEnd);
-
-        updateSequence(nextValue, "immediate");
-
-        if (textareaRef.current && nextValue.length <= MAX_EDITOR_CHARS) {
-            const cursor = selectionStart + pastedText.length;
-            textareaRef.current.selectionStart = cursor;
-            textareaRef.current.selectionEnd = cursor;
+    const handleTextareaBeforeInput = (event: FormEvent<HTMLTextAreaElement>) => {
+        if (isLargeSequenceMode || event.currentTarget.readOnly) {
+            event.preventDefault();
+            return;
         }
+
+        const nativeEvent = event.nativeEvent as InputEvent;
+        const inputType = nativeEvent.inputType ?? "";
+        if (!inputType.startsWith("insert")) return;
+
+        const rawChunk = nativeEvent.data ?? "";
+        if (!rawChunk) return;
+
+        const sanitizedChunk = sanitizeStep1TemplateSequenceInput(rawChunk);
+        if (sanitizedChunk === rawChunk) return;
+
+        event.preventDefault();
+        insertSanitizedChunkAtSelection(event.currentTarget, rawChunk);
     };
 
     const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -230,6 +256,7 @@ export default function Step1TemplateEssential({
                                 readOnly={isLargeSequenceMode}
                                 defaultValue={getPreviewValue(sequenceRef.current)}
                                 onChange={handleTextareaChange}
+                                onBeforeInput={handleTextareaBeforeInput}
                                 onPaste={handleTextareaPaste}
                             />
                         </div>
@@ -241,7 +268,7 @@ export default function Step1TemplateEssential({
                             </p>
                         )}
                         <p className="mt-2 text-[11px] text-slate-500">
-                            A, T, G, C 문자는 입력 시 자동으로 대문자로 변환됩니다.
+                            A, T, G, C 이외 문자는 입력 시 자동으로 제거되며 대문자로 변환됩니다.
                         </p>
                         {validationMessage && (
                             <p className="mt-2 text-xs text-red-300">{validationMessage}</p>
