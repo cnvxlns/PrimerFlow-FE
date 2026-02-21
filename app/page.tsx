@@ -179,7 +179,6 @@ export default function Home() {
             setIsModalOpen(false);
             // Surface the error for visibility during development.
             console.error("Generate Primers failed", error);
-            alert(message);
         } finally {
             setIsLoading(false);
         }

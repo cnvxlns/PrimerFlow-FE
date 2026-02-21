@@ -60,7 +60,10 @@ export default function Step1TemplateEssential({
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const countTimeoutRef = useRef<number | null>(null);
-    const allowNativePasteForNextChangeRef = useRef(false);
+    const invalidRemovalResolverRef = useRef<((approved: boolean) => void) | null>(null);
+    const [invalidRemovalDialogMessage, setInvalidRemovalDialogMessage] = useState<string | null>(
+        null,
+    );
     const [isLargeSequenceMode, setIsLargeSequenceMode] = useState(
         sequenceRef.current.length > MAX_EDITOR_CHARS,
     );
@@ -109,28 +112,49 @@ export default function Step1TemplateEssential({
     useEffect(
         () => () => {
             clearPendingCountTimer();
+            if (invalidRemovalResolverRef.current) {
+                invalidRemovalResolverRef.current(false);
+                invalidRemovalResolverRef.current = null;
+            }
         },
         [],
     );
 
     const focusTextarea = () => textareaRef.current?.focus();
 
-    const confirmInvalidRemoval = (rawSequence: string) => {
+    const requestInvalidRemovalConsent = (message: string) =>
+        new Promise<boolean>((resolve) => {
+            if (invalidRemovalResolverRef.current) {
+                invalidRemovalResolverRef.current(false);
+            }
+            invalidRemovalResolverRef.current = resolve;
+            setInvalidRemovalDialogMessage(message);
+        });
+
+    const resolveInvalidRemovalConsent = (approved: boolean) => {
+        if (invalidRemovalResolverRef.current) {
+            invalidRemovalResolverRef.current(approved);
+            invalidRemovalResolverRef.current = null;
+        }
+        setInvalidRemovalDialogMessage(null);
+    };
+
+    const confirmInvalidRemoval = async (rawSequence: string) => {
         const invalidChars = getInvalidStep1TemplateSequenceChars(rawSequence);
         if (invalidChars.length === 0) return true;
 
         const previewInvalidChars = invalidChars.slice(0, 8).join(", ");
         const extraKinds = invalidChars.length > 8 ? ` 외 ${invalidChars.length - 8}종` : "";
-        return window.confirm(
+        return requestInvalidRemovalConsent(
             `붙여넣으려는 데이터에 A, T, G, C 이외 문자가 포함되어 있습니다 (${previewInvalidChars}${extraKinds}). 해당 문자를 제거하고 계속할까요?`,
         );
     };
 
-    const appendSequence = (
+    const appendSequence = async (
         next: string,
         options: { requireInvalidRemovalConsent?: boolean } = {},
     ) => {
-        if (options.requireInvalidRemovalConsent && !confirmInvalidRemoval(next)) {
+        if (options.requireInvalidRemovalConsent && !(await confirmInvalidRemoval(next))) {
             focusTextarea();
             return;
         }
@@ -148,17 +172,20 @@ export default function Step1TemplateEssential({
         focusTextarea();
     };
 
-    const insertSanitizedChunkAtSelection = (
+    const insertChunkAtSelection = (
         textarea: HTMLTextAreaElement,
         rawChunk: string,
+        options: { sanitize: boolean },
     ) => {
-        const sanitizedChunk = sanitizeStep1TemplateSequenceInput(rawChunk);
+        const nextChunk = options.sanitize
+            ? sanitizeStep1TemplateSequenceInput(rawChunk)
+            : rawChunk;
         const currentValue = sequenceRef.current;
         const selectionStart = textarea.selectionStart ?? currentValue.length;
         const selectionEnd = textarea.selectionEnd ?? currentValue.length;
         const nextValue =
             currentValue.slice(0, selectionStart) +
-            sanitizedChunk +
+            nextChunk +
             currentValue.slice(selectionEnd);
 
         if (nextValue !== currentValue) {
@@ -166,7 +193,7 @@ export default function Step1TemplateEssential({
         }
 
         if (textareaRef.current && nextValue.length <= MAX_EDITOR_CHARS) {
-            const cursor = selectionStart + sanitizedChunk.length;
+            const cursor = selectionStart + nextChunk.length;
             textareaRef.current.selectionStart = cursor;
             textareaRef.current.selectionEnd = cursor;
         }
@@ -181,7 +208,7 @@ export default function Step1TemplateEssential({
 
         try {
             const text = await file.text();
-            appendSequence(text, { requireInvalidRemovalConsent: true });
+            await appendSequence(text, { requireInvalidRemovalConsent: true });
         } catch (error) {
             console.error("Failed to read FASTA file", error);
         } finally {
@@ -197,29 +224,25 @@ export default function Step1TemplateEssential({
 
         try {
             const text = await navigator.clipboard.readText();
-            appendSequence(text, { requireInvalidRemovalConsent: true });
+            await appendSequence(text, { requireInvalidRemovalConsent: true });
         } catch (error) {
             console.error("Failed to read from clipboard", error);
         }
     };
 
-    const handleTextareaPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const handleTextareaPaste = async (event: ClipboardEvent<HTMLTextAreaElement>) => {
         if (isLargeSequenceMode || event.currentTarget.readOnly) {
             event.preventDefault();
             return;
         }
 
+        const textarea = event.currentTarget;
         const pastedText = event.clipboardData.getData("text");
         if (!pastedText) return;
-        if (!confirmInvalidRemoval(pastedText)) {
-            // Allow one native paste change without sanitize so cancel keeps default behavior.
-            allowNativePasteForNextChangeRef.current = true;
-            focusTextarea();
-            return;
-        }
-
         event.preventDefault();
-        insertSanitizedChunkAtSelection(event.currentTarget, pastedText);
+        const shouldSanitize = await confirmInvalidRemoval(pastedText);
+        insertChunkAtSelection(textarea, pastedText, { sanitize: shouldSanitize });
+        focusTextarea();
     };
 
     const handleTextareaBeforeInput = (event: FormEvent<HTMLTextAreaElement>) => {
@@ -240,21 +263,11 @@ export default function Step1TemplateEssential({
         if (sanitizedChunk === rawChunk) return;
 
         event.preventDefault();
-        insertSanitizedChunkAtSelection(event.currentTarget, rawChunk);
+        insertChunkAtSelection(event.currentTarget, rawChunk, { sanitize: true });
     };
 
     const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
         if (isLargeSequenceMode || event.currentTarget.readOnly) return;
-        const nativeEvent = event.nativeEvent as InputEvent;
-        if (
-            allowNativePasteForNextChangeRef.current &&
-            nativeEvent.inputType === "insertFromPaste"
-        ) {
-            allowNativePasteForNextChangeRef.current = false;
-            updateSequence(event.currentTarget.value);
-            return;
-        }
-        allowNativePasteForNextChangeRef.current = false;
         updateSequence(sanitizeStep1TemplateSequenceInput(event.currentTarget.value));
     };
 
@@ -264,10 +277,11 @@ export default function Step1TemplateEssential({
     };
 
     return (
-        <section className="flex flex-col gap-4">
-            <div className="rounded-xl border border-slate-800/70 bg-slate-900/80 px-4 py-3 text-base font-bold text-slate-300">
-                Step 1. 템플릿 시퀀스와 기본 설정을 입력하세요.
-            </div>
+        <>
+            <section className="flex flex-col gap-4">
+                <div className="rounded-xl border border-slate-800/70 bg-slate-900/80 px-4 py-3 text-base font-bold text-slate-300">
+                    Step 1. 템플릿 시퀀스와 기본 설정을 입력하세요.
+                </div>
 
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] items-start">
                 <div className="flex flex-col rounded-xl border border-slate-800/70 bg-slate-900/70 overflow-hidden shadow-lg shadow-black/20">
@@ -442,6 +456,44 @@ export default function Step1TemplateEssential({
                 </div>
             </div>
             </div>
-        </section>
+            </section>
+            {invalidRemovalDialogMessage && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+                    onClick={(event) => {
+                        if (event.target === event.currentTarget) {
+                            resolveInvalidRemovalConsent(false);
+                        }
+                    }}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl shadow-black/40"
+                    >
+                        <h3 className="text-base font-semibold text-white">문자 제거 확인</h3>
+                        <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                            {invalidRemovalDialogMessage}
+                        </p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-semibold text-slate-200 transition hover:border-slate-500"
+                                onClick={() => resolveInvalidRemovalConsent(false)}
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="button"
+                                className="rounded-lg border border-blue-500/60 bg-blue-600/80 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+                                onClick={() => resolveInvalidRemovalConsent(true)}
+                            >
+                                제거 후 계속
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
