@@ -295,8 +295,9 @@ export default function Step1TemplateEssential({
                             </p>
                         )}
                         <p className="mt-2 text-[11px] text-slate-500">
-                            A, T, G, C 이외 문자는 입력 시 자동으로 제거됩니다. Paste 버튼,
-                            Ctrl+V, Upload FASTA에서는 제거 전에 확인을 요청합니다.
+                            A, T, G, C 이외 문자는 입력 시 자동으로 제거됩니다.
+                            <br />
+                            Paste 버튼, Ctrl+V, Upload FASTA에서는 제거 전에 확인을 요청합니다.
                         </p>
                         {validationMessage && (
                             <p className="mt-2 text-xs text-red-300">{validationMessage}</p>
