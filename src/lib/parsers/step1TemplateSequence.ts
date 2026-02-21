@@ -25,5 +25,16 @@ export const normalizeStep1TemplateSequence = (rawSequence: string) =>
 export const isUppercaseAtgcOnlySequence = (value: string) =>
   UPPERCASE_ATGC_ONLY_PATTERN.test(value);
 
+export const getInvalidStep1TemplateSequenceChars = (rawSequence: string) => {
+  const matches = stripFastaHeadersAndWhitespace(rawSequence).match(NON_ATGC_GLOBAL_PATTERN);
+  if (!matches) return [];
+
+  const uniqueChars = new Set<string>();
+  for (const char of matches) {
+    uniqueChars.add(char);
+  }
+  return [...uniqueChars];
+};
+
 export const getInvalidStep1TemplateSequenceChar = (rawSequence: string) =>
   stripFastaHeadersAndWhitespace(rawSequence).match(NON_ATGC_PATTERN)?.[0] ?? null;

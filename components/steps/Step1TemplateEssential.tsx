@@ -10,7 +10,10 @@ import {
     useState,
 } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { sanitizeStep1TemplateSequenceInput } from "../../src/lib/parsers/step1TemplateSequence";
+import {
+    getInvalidStep1TemplateSequenceChars,
+    sanitizeStep1TemplateSequenceInput,
+} from "../../src/lib/parsers/step1TemplateSequence";
 
 type Step1TemplateEssentialProps = {
     sequenceRef: MutableRefObject<string>;
@@ -111,7 +114,26 @@ export default function Step1TemplateEssential({
 
     const focusTextarea = () => textareaRef.current?.focus();
 
-    const appendSequence = (next: string) => {
+    const confirmInvalidRemoval = (rawSequence: string) => {
+        const invalidChars = getInvalidStep1TemplateSequenceChars(rawSequence);
+        if (invalidChars.length === 0) return true;
+
+        const previewInvalidChars = invalidChars.slice(0, 8).join(", ");
+        const extraKinds = invalidChars.length > 8 ? ` 외 ${invalidChars.length - 8}종` : "";
+        return window.confirm(
+            `붙여넣으려는 데이터에 A, T, G, C 이외 문자가 포함되어 있습니다 (${previewInvalidChars}${extraKinds}). 해당 문자를 제거하고 계속할까요?`,
+        );
+    };
+
+    const appendSequence = (
+        next: string,
+        options: { requireInvalidRemovalConsent?: boolean } = {},
+    ) => {
+        if (options.requireInvalidRemovalConsent && !confirmInvalidRemoval(next)) {
+            focusTextarea();
+            return;
+        }
+
         const sanitizedChunk = sanitizeStep1TemplateSequenceInput(next);
         if (!sanitizedChunk) {
             focusTextarea();
@@ -158,7 +180,7 @@ export default function Step1TemplateEssential({
 
         try {
             const text = await file.text();
-            appendSequence(text);
+            appendSequence(text, { requireInvalidRemovalConsent: true });
         } catch (error) {
             console.error("Failed to read FASTA file", error);
         } finally {
@@ -174,7 +196,7 @@ export default function Step1TemplateEssential({
 
         try {
             const text = await navigator.clipboard.readText();
-            appendSequence(text);
+            appendSequence(text, { requireInvalidRemovalConsent: true });
         } catch (error) {
             console.error("Failed to read from clipboard", error);
         }
@@ -190,6 +212,10 @@ export default function Step1TemplateEssential({
 
         const pastedText = event.clipboardData.getData("text");
         if (!pastedText) return;
+        if (!confirmInvalidRemoval(pastedText)) {
+            focusTextarea();
+            return;
+        }
         insertSanitizedChunkAtSelection(event.currentTarget, pastedText);
     };
 
@@ -201,6 +227,7 @@ export default function Step1TemplateEssential({
 
         const nativeEvent = event.nativeEvent as InputEvent;
         const inputType = nativeEvent.inputType ?? "";
+        if (inputType === "insertFromPaste") return;
         if (!inputType.startsWith("insert")) return;
 
         const rawChunk = nativeEvent.data ?? "";
@@ -268,7 +295,8 @@ export default function Step1TemplateEssential({
                             </p>
                         )}
                         <p className="mt-2 text-[11px] text-slate-500">
-                            A, T, G, C 이외 문자는 입력 시 자동으로 제거되며 대문자로 변환됩니다.
+                            A, T, G, C 이외 문자는 입력 시 자동으로 제거됩니다. Paste 버튼,
+                            Ctrl+V, Upload FASTA에서는 제거 전에 확인을 요청합니다.
                         </p>
                         {validationMessage && (
                             <p className="mt-2 text-xs text-red-300">{validationMessage}</p>
