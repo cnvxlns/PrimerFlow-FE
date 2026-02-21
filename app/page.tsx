@@ -72,20 +72,36 @@ export default function Home() {
             setStep1WarningMessage(null);
         }
     };
-    const validateStep1Sequence = () => {
-        const invalidChar = getInvalidStep1TemplateSequenceChar(sequenceInputRef.current);
+    const validateStep1Sequence = (mode: "step-transition" | "generate") => {
+        const rawInputSequence = sequenceInputRef.current;
+        const normalizedSequence = normalizeStep1TemplateSequence(rawInputSequence);
+        const invalidChar = getInvalidStep1TemplateSequenceChar(rawInputSequence);
         if (!invalidChar) {
+            if (mode === "generate" && rawInputSequence.trim().length > 0 && !normalizedSequence) {
+                // Generate 직전 검증: 입력이 있었는데 정규화 후 빈 문자열이면 요청 중단.
+                const warningMessage =
+                    "전송할 수 있는 유효한 염기서열이 없습니다. A, T, G, C 문자만 입력해 주세요.";
+                setStep1WarningMessage(warningMessage);
+                setErrorMessage(warningMessage);
+                alert(warningMessage);
+                return { isValid: false, normalizedSequence };
+            }
+
+            // 단계 이동 검증: Step1 경고를 초기화하고 다음 동작 진행.
             setStep1WarningMessage(null);
-            return true;
+            return { isValid: true, normalizedSequence };
         }
 
         const warningMessage = `대소문자 구분 없이 A, T, G, C만 입력 가능합니다. 잘못된 문자를 제거해 주세요.`;
         setStep1WarningMessage(warningMessage);
+        if (mode === "generate") {
+            setErrorMessage(warningMessage);
+        }
         alert(warningMessage);
-        return false;
+        return { isValid: false, normalizedSequence };
     };
     const handleNext = () => {
-        if (step === 1 && !validateStep1Sequence()) {
+        if (step === 1 && !validateStep1Sequence("step-transition").isValid) {
             return;
         }
 
@@ -102,20 +118,14 @@ export default function Home() {
     );
 
     const handleGenerate = async () => {
-        const rawInputSequence = sequenceInputRef.current;
-        const inputSequence = normalizeStep1TemplateSequence(rawInputSequence);
-        if (rawInputSequence.trim().length > 0 && inputSequence.length === 0) {
-            const warningMessage =
-                "전송할 수 있는 유효한 염기서열이 없습니다. A, T, G, C 문자만 입력해 주세요.";
-            setStep1WarningMessage(warningMessage);
-            setErrorMessage(warningMessage);
-            alert(warningMessage);
+        const validation = validateStep1Sequence("generate");
+        if (!validation.isValid) {
             return;
         }
 
         const targetSeq =
-            inputSequence && inputSequence.trim().length > 0
-                ? inputSequence.trim()
+            validation.normalizedSequence && validation.normalizedSequence.trim().length > 0
+                ? validation.normalizedSequence.trim()
                 : "ATGCGTACGTAGCTAGCTAGCTAGCTAATGCGTACGTAGCTAGCTAGCTAGCTA";
 
         const payload: AnalyzeRequestInput = {
