@@ -1,5 +1,4 @@
 const FASTA_HEADER_PREFIX = ">";
-const ATGC_ONLY_PATTERN = /^[ATGC]*$/i;
 const UPPERCASE_ATGC_ONLY_PATTERN = /^[ATGC]+$/;
 const NON_ATGC_PATTERN = /[^ATGCatgc]/;
 const NON_ATGC_GLOBAL_PATTERN = /[^ATGCatgc]/g;
@@ -10,9 +9,6 @@ const stripFastaHeadersAndWhitespace = (rawSequence: string) =>
     .filter((line) => !line.trim().startsWith(FASTA_HEADER_PREFIX))
     .join("")
     .replace(/\s+/g, "");
-
-export const toUpperCaseAtgcOnly = (value: string) =>
-  ATGC_ONLY_PATTERN.test(value) ? value.toUpperCase() : value;
 
 export const sanitizeStep1TemplateSequenceInput = (rawSequence: string) =>
   stripFastaHeadersAndWhitespace(rawSequence)
