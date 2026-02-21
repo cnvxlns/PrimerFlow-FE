@@ -12,7 +12,7 @@ import { useViewStore } from "@/store/useViewStore";
 import {
     getInvalidStep1TemplateSequenceChar,
     normalizeStep1TemplateSequence,
-} from "@/lib/parsers/step1TemplateSequence";
+} from "../src/lib/parsers/step1TemplateSequence";
 import Step1TemplateEssential from "@/components/steps/Step1TemplateEssential";
 import Step2PrimerProperties from "@/components/steps/Step2PrimerProperties";
 import Step3BindingLocation from "@/components/steps/Step3BindingLocation";

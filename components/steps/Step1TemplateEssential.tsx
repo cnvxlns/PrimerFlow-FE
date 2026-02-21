@@ -9,7 +9,7 @@ import {
     useState,
 } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { toUpperCaseAtgcOnly } from "@/lib/parsers/step1TemplateSequence";
+import { toUpperCaseAtgcOnly } from "../../src/lib/parsers/step1TemplateSequence";
 
 type Step1TemplateEssentialProps = {
     sequenceRef: MutableRefObject<string>;
