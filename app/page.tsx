@@ -11,7 +11,6 @@ import type { GenomeData, PrimerDesignResponseUI } from "@/types";
 import { useViewStore } from "@/store/useViewStore";
 import {
     getInvalidStep1TemplateSequenceChar,
-    isUppercaseAtgcOnlySequence,
     normalizeStep1TemplateSequence,
 } from "../src/lib/parsers/step1TemplateSequence";
 import Step1TemplateEssential from "@/components/steps/Step1TemplateEssential";
@@ -118,15 +117,6 @@ export default function Home() {
             inputSequence && inputSequence.trim().length > 0
                 ? inputSequence.trim()
                 : "ATGCGTACGTAGCTAGCTAGCTAGCTAATGCGTACGTAGCTAGCTAGCTAGCTA";
-
-        if (!isUppercaseAtgcOnlySequence(targetSeq)) {
-            const warningMessage =
-                "전송 전 검증에 실패했습니다. 시퀀스는 대문자 A, T, G, C만 포함해야 합니다.";
-            setStep1WarningMessage(warningMessage);
-            setErrorMessage(warningMessage);
-            alert(warningMessage);
-            return;
-        }
 
         const payload: AnalyzeRequestInput = {
             target_sequence: targetSeq,

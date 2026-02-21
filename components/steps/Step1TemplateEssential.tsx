@@ -242,7 +242,7 @@ export default function Step1TemplateEssential({
 
     const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
         if (isLargeSequenceMode || event.currentTarget.readOnly) return;
-        updateSequence(event.currentTarget.value);
+        updateSequence(sanitizeStep1TemplateSequenceInput(event.currentTarget.value));
     };
 
     const handleCleanClick = () => {
