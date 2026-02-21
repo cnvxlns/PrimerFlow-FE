@@ -9,9 +9,12 @@ import {
     useState,
 } from "react";
 import { SlidersHorizontal } from "lucide-react";
+import { toUpperCaseAtgcOnly } from "@/lib/parsers/step1TemplateSequence";
 
 type Step1TemplateEssentialProps = {
     sequenceRef: MutableRefObject<string>;
+    validationMessage?: string | null;
+    onSequenceChange?: (value: string) => void;
 };
 
 const countAlphabeticChars = (value: string) => {
@@ -47,6 +50,8 @@ const getPreviewValue = (value: string) => {
 
 export default function Step1TemplateEssential({
     sequenceRef,
+    validationMessage,
+    onSequenceChange,
 }: Step1TemplateEssentialProps) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -76,12 +81,16 @@ export default function Step1TemplateEssential({
     };
 
     const updateSequence = (value: string, countMode: "defer" | "immediate" = "defer") => {
-        sequenceRef.current = value;
-        const nextIsLargeSequence = value.length > MAX_EDITOR_CHARS;
+        const normalizedValue = toUpperCaseAtgcOnly(value);
+        sequenceRef.current = normalizedValue;
+        onSequenceChange?.(normalizedValue);
+        const nextIsLargeSequence = normalizedValue.length > MAX_EDITOR_CHARS;
         setIsLargeSequenceMode(nextIsLargeSequence);
 
         if (textareaRef.current) {
-            const nextEditorValue = nextIsLargeSequence ? getPreviewValue(value) : value;
+            const nextEditorValue = nextIsLargeSequence
+                ? getPreviewValue(normalizedValue)
+                : normalizedValue;
             if (textareaRef.current.value !== nextEditorValue) {
                 textareaRef.current.value = nextEditorValue;
             }
@@ -89,10 +98,10 @@ export default function Step1TemplateEssential({
 
         if (countMode === "immediate") {
             clearPendingCountTimer();
-            setBasePairCount(countAlphabeticChars(value));
+            setBasePairCount(countAlphabeticChars(normalizedValue));
             return;
         }
-        scheduleCount(value, nextIsLargeSequence);
+        scheduleCount(normalizedValue, nextIsLargeSequence);
     };
 
     useEffect(
@@ -230,6 +239,12 @@ export default function Step1TemplateEssential({
                                 kept in memory and will be used for generation, but the editor
                                 shows only a preview.
                             </p>
+                        )}
+                        <p className="mt-2 text-[11px] text-slate-500">
+                            A, T, G, C 문자는 입력 시 자동으로 대문자로 변환됩니다.
+                        </p>
+                        {validationMessage && (
+                            <p className="mt-2 text-xs text-red-300">{validationMessage}</p>
                         )}
                     </label>
                     <div className="flex flex-wrap gap-2 justify-end">

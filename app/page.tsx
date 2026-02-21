@@ -9,6 +9,10 @@ import {
 import { demoGenome } from "@/lib/mocks/demoGenome";
 import type { GenomeData, PrimerDesignResponseUI } from "@/types";
 import { useViewStore } from "@/store/useViewStore";
+import {
+    getInvalidStep1TemplateSequenceChar,
+    normalizeStep1TemplateSequence,
+} from "@/lib/parsers/step1TemplateSequence";
 import Step1TemplateEssential from "@/components/steps/Step1TemplateEssential";
 import Step2PrimerProperties from "@/components/steps/Step2PrimerProperties";
 import Step3BindingLocation from "@/components/steps/Step3BindingLocation";
@@ -56,13 +60,37 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(false);
     const [apiResult, setApiResult] = useState<PrimerDesignResponseUI | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [step1WarningMessage, setStep1WarningMessage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const totalSteps = steps.length;
     const handleStepChange = (next: number) => {
         const clamped = Math.min(Math.max(next, 1), totalSteps) as 1 | 2 | 3 | 4;
         setStep(clamped);
     };
-    const handleNext = () => handleStepChange(step + 1);
+    const clearStep1Warning = () => {
+        if (step1WarningMessage) {
+            setStep1WarningMessage(null);
+        }
+    };
+    const validateStep1Sequence = () => {
+        const invalidChar = getInvalidStep1TemplateSequenceChar(sequenceInputRef.current);
+        if (!invalidChar) {
+            setStep1WarningMessage(null);
+            return true;
+        }
+
+        const warningMessage = `대소문자 구분 없이 A, T, G, C만 입력 가능합니다. 잘못된 문자를 제거해 주세요.`;
+        setStep1WarningMessage(warningMessage);
+        alert(warningMessage);
+        return false;
+    };
+    const handleNext = () => {
+        if (step === 1 && !validateStep1Sequence()) {
+            return;
+        }
+
+        handleStepChange(step + 1);
+    };
     const handleBack = () => handleStepChange(step - 1);
     const isLastStep = step === totalSteps;
 
@@ -74,7 +102,7 @@ export default function Home() {
     );
 
     const handleGenerate = async () => {
-        const inputSequence = sequenceInputRef.current;
+        const inputSequence = normalizeStep1TemplateSequence(sequenceInputRef.current);
         const targetSeq =
             inputSequence && inputSequence.trim().length > 0
                 ? inputSequence.trim()
@@ -149,6 +177,8 @@ export default function Home() {
                 {step === 1 && (
                     <Step1TemplateEssential
                         sequenceRef={sequenceInputRef}
+                        validationMessage={step1WarningMessage}
+                        onSequenceChange={clearStep1Warning}
                     />
                 )}
 
