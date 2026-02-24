@@ -324,7 +324,7 @@ export default function Step1TemplateEssential({
                         <p className="mt-2 text-[11px] text-slate-500">
                             A, T, G, C 이외 문자는 입력 시 자동으로 제거됩니다.
                             <br />
-                            Paste 버튼, Ctrl+V, Upload FASTA에서는 제거 전에 확인을 요청합니다.
+                            Paste 버튼, Ctrl+V, Upload as file에서는 제거 전에 확인을 요청합니다.
                         </p>
                         {validationMessage && (
                             <p className="mt-2 text-xs text-red-300">{validationMessage}</p>
@@ -334,7 +334,7 @@ export default function Step1TemplateEssential({
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept=".fa,.fasta,.txt"
+                            accept=".fa,.fasta,.fna,.txt"
                             className="hidden"
                             onChange={handleFileChange}
                         />
@@ -343,7 +343,7 @@ export default function Step1TemplateEssential({
                             className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700"
                             onClick={handleUploadClick}
                         >
-                            Upload FASTA
+                            Upload as file
                         </button>
                         <button
                             type="button"
