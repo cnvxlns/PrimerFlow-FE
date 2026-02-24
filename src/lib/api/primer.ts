@@ -13,7 +13,7 @@ export const postDesignPrimers = async (
   payload: PrimerDesignRequest,
 ): Promise<PrimerDesignResponse> => {
   const response: AxiosResponse<PrimerDesignResponse> = await apiClient.post(
-    "/primer/design",
+    "/design",
     payload,
   );
 

@@ -6,7 +6,6 @@ import {
     analyzeGenome,
     type AnalyzeRequestInput,
 } from "@/services/analysisService";
-import { demoGenome } from "@/lib/mocks/demoGenome";
 import type { GenomeData, PrimerDesignResponseUI } from "@/types";
 import { useViewStore } from "@/store/useViewStore";
 import {
@@ -29,6 +28,28 @@ const toGenomeDataFromResponse = (response: PrimerDesignResponseUI | null): Geno
         0;
     const tracks = response.genome.tracks ?? [];
     return { length, tracks };
+};
+
+const DEFAULT_PREVIEW_GENOME: GenomeData = {
+    length: 12000,
+    tracks: [
+        {
+            id: "preview-primer-candidates",
+            name: "Primer 후보군",
+            height: 28,
+            features: [
+                { id: "p-01", start: 400, end: 1200, label: "P-01", color: "#2563eb" },
+                { id: "p-02", start: 1800, end: 2600, label: "P-02", color: "#0ea5e9" },
+                { id: "p-03", start: 3200, end: 4300, label: "P-03", color: "#22c55e" },
+            ],
+        },
+        {
+            id: "preview-target-region",
+            name: "Target 구간",
+            height: 18,
+            features: [{ id: "amplicon", start: 1500, end: 5200, label: "Amplicon", color: "#f97316" }],
+        },
+    ],
 };
 
 export default function Home() {
@@ -118,7 +139,7 @@ export default function Home() {
     const handleBack = () => handleStepChange(step - 1);
     const isLastStep = step === totalSteps;
 
-    const previewGenome = demoGenome;
+    const previewGenome = DEFAULT_PREVIEW_GENOME;
     const trackCount = previewGenome.tracks.length;
     const featureCount = previewGenome.tracks.reduce(
         (count, track) => count + track.features.length,
@@ -131,16 +152,16 @@ export default function Home() {
             return;
         }
 
-        const targetSeq =
-            validation.normalizedSequence && validation.normalizedSequence.trim().length > 0
-                ? validation.normalizedSequence.trim()
-                : "ATGCGTACGTAGCTAGCTAGCTAGCTAATGCGTACGTAGCTAGCTAGCTAGCTA";
+        const targetSeq = validation.normalizedSequence?.trim() ?? "";
+        if (!targetSeq) {
+            setErrorMessage("Template sequence is required.");
+            return;
+        }
 
         const payload: AnalyzeRequestInput = {
             target_sequence: targetSeq,
             species: "Homo sapiens",
             analysis_type: "primer_generation",
-            notes: "UI mock request while backend is offline",
             product_size_min: 100,
             product_size_max: 300,
             tm_min: 57,

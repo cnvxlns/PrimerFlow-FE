@@ -52,11 +52,11 @@ export interface AnalyzeRequestInput {
 
 // Adapter: flat UI -> official request schema
 const toPrimerDesignRequest = (input: AnalyzeRequestInput): PrimerDesignRequest => {
-  const seq = input.target_sequence || input.templateSequence || "ATGC";
+  const seq = input.target_sequence || input.templateSequence || "";
   const searchFrom = input.search_start ?? 1;
   const searchTo =
     input.search_end ??
-    searchFrom + (seq?.length || 1000);
+    searchFrom + Math.max(seq.length - 1, 0);
 
   return {
     basic: {
@@ -224,7 +224,7 @@ export const analyzeGenome = async (
 
   console.log("🚀 Sending Payload:", payload);
 
-  const response = await api.post<PrimerDesignResponse>("/primer/design", payload);
+  const response = await api.post<PrimerDesignResponse>("/design", payload);
   const rawData = response.data;
 
   const transformed = toUiResponse(rawData);
