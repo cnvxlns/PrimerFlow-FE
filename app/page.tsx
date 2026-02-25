@@ -154,7 +154,7 @@ export default function Home() {
 
         const targetSeq = validation.normalizedSequence?.trim() ?? "";
         if (!targetSeq) {
-            setErrorMessage("Template sequence is required.");
+            setErrorMessage("템플릿 시퀀스를 입력해 주세요.");
             return;
         }
 
