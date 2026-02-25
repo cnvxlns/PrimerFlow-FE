@@ -10,10 +10,12 @@ import type {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
+type AnalyzeSequenceInput =
+  | { target_sequence: string; templateSequence?: string }
+  | { target_sequence?: string; templateSequence: string };
+
 // Flat input from UI (kept flexible)
-export interface AnalyzeRequestInput {
-  target_sequence?: string;
-  templateSequence?: string;
+export type AnalyzeRequestInput = AnalyzeSequenceInput & {
   species?: string;
   targetOrganism?: string;
   analysis_type?: string;
@@ -48,11 +50,26 @@ export interface AnalyzeRequestInput {
   intron_size_min?: number;
   intron_size_max?: number;
   restriction_enzymes?: string[];
-}
+};
+
+const resolveTemplateSequence = (input: AnalyzeRequestInput): string => {
+  const templateSequence = (input.target_sequence ?? input.templateSequence ?? "").trim();
+
+  if (!templateSequence) {
+    throw new Error(
+      "템플릿 시퀀스가 비어 있습니다. target_sequence 또는 templateSequence를 입력해 주세요.",
+    );
+  }
+
+  return templateSequence;
+};
 
 // Adapter: flat UI -> official request schema
-const toPrimerDesignRequest = (input: AnalyzeRequestInput): PrimerDesignRequest => {
-  const seq = input.target_sequence || input.templateSequence || "";
+const toPrimerDesignRequest = (
+  input: AnalyzeRequestInput,
+  templateSequence: string,
+): PrimerDesignRequest => {
+  const seq = templateSequence;
   const searchFrom = input.search_start ?? 1;
   const searchTo =
     input.search_end ??
@@ -220,7 +237,8 @@ const toUiResponse = (raw: PrimerDesignResponse): PrimerDesignResponseUI => {
 export const analyzeGenome = async (
   input: AnalyzeRequestInput,
 ): Promise<PrimerDesignResponseUI> => {
-  const payload = toPrimerDesignRequest(input);
+  const templateSequence = resolveTemplateSequence(input);
+  const payload = toPrimerDesignRequest(input, templateSequence);
 
   console.log("🚀 Sending Payload:", payload);
 
