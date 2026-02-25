@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - master
       - develop
 
 concurrency:
@@ -19,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_TELEMETRY_DISABLED: "1"
 
     steps:
       - name: Checkout
@@ -34,33 +35,39 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm test
-
       - name: Inject BACKEND_URL
         shell: bash
         env:
           BACKEND_URL_PRODUCTION: ${{ secrets.BACKEND_URL_PRODUCTION }}
           BACKEND_URL_STAGING: ${{ secrets.BACKEND_URL_STAGING }}
         run: |
-          if [ "${{ github.base_ref }}" = "main" ]; then
-            if [ -z "$BACKEND_URL_PRODUCTION" ]; then
-              echo "::error::Missing secret BACKEND_URL_PRODUCTION"
-              echo "::error::Set it in Settings -> Secrets and variables -> Actions -> Repository secrets"
-              exit 1
-            fi
-            echo "BACKEND_URL=$BACKEND_URL_PRODUCTION" >> "$GITHUB_ENV"
-          else
-            if [ -z "$BACKEND_URL_STAGING" ]; then
-              echo "::error::Missing secret BACKEND_URL_STAGING"
-              echo "::error::Set it in Settings -> Secrets and variables -> Actions -> Repository secrets"
-              exit 1
-            fi
-            echo "BACKEND_URL=$BACKEND_URL_STAGING" >> "$GITHUB_ENV"
+          # fork PR은 보안상 secrets가 전달되지 않음 → 공개 URL(또는 더미)로 빌드만 통과
+          if [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+            echo "BACKEND_URL=https://primerflow-be.onrender.com" >> "$GITHUB_ENV"
+            exit 0
           fi
+
+          if [ "${{ github.base_ref }}" = "main" ] || [ "${{ github.base_ref }}" = "master" ]; then
+            selected="$BACKEND_URL_PRODUCTION"
+            key="BACKEND_URL_PRODUCTION"
+          else
+            selected="$BACKEND_URL_STAGING"
+            key="BACKEND_URL_STAGING"
+          fi
+
+          if [ -z "$selected" ]; then
+            echo "::error::Missing secret $key"
+            echo "::error::Set it in Settings -> Secrets and variables -> Actions -> Repository secrets"
+            exit 1
+          fi
+
+          echo "BACKEND_URL=$selected" >> "$GITHUB_ENV"
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
 
       - name: Build
         run: npm run build
