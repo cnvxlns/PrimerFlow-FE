@@ -40,7 +40,27 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Inject BACKEND_URL
+        shell: bash
+        env:
+          BACKEND_URL_PRODUCTION: ${{ secrets.BACKEND_URL_PRODUCTION }}
+          BACKEND_URL_STAGING: ${{ secrets.BACKEND_URL_STAGING }}
+        run: |
+          if [ "${{ github.base_ref }}" = "main" ]; then
+            if [ -z "$BACKEND_URL_PRODUCTION" ]; then
+              echo "::error::Missing secret BACKEND_URL_PRODUCTION"
+              echo "::error::Set it in Settings -> Secrets and variables -> Actions -> Repository secrets"
+              exit 1
+            fi
+            echo "BACKEND_URL=$BACKEND_URL_PRODUCTION" >> "$GITHUB_ENV"
+          else
+            if [ -z "$BACKEND_URL_STAGING" ]; then
+              echo "::error::Missing secret BACKEND_URL_STAGING"
+              echo "::error::Set it in Settings -> Secrets and variables -> Actions -> Repository secrets"
+              exit 1
+            fi
+            echo "BACKEND_URL=$BACKEND_URL_STAGING" >> "$GITHUB_ENV"
+          fi
+
       - name: Build
         run: npm run build
-        env:
-          BACKEND_URL: ${{ github.base_ref == 'main' && secrets.BACKEND_URL_PRODUCTION || secrets.BACKEND_URL_STAGING }}
