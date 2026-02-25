@@ -5,6 +5,14 @@ on:
     branches:
       - main
       - develop
+      - release
+      - 'release/**'
+  push:
+    branches:
+      - main
+      - develop
+      - release
+      - 'release/**'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -30,6 +38,37 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      - name: Resolve target branch
+        id: branch
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "target_branch=${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "target_branch=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Inject BACKEND_URL
+        env:
+          TARGET_BRANCH: ${{ steps.branch.outputs.target_branch }}
+          BACKEND_URL_PRODUCTION: ${{ secrets.BACKEND_URL_PRODUCTION }}
+          BACKEND_URL_STAGING: ${{ secrets.BACKEND_URL_STAGING }}
+        run: |
+          if [ "$TARGET_BRANCH" = "main" ] || [ "$TARGET_BRANCH" = "release" ] || [[ "$TARGET_BRANCH" == release/* ]]; then
+            selected_url="$BACKEND_URL_PRODUCTION"
+            selected_env="production"
+          else
+            selected_url="$BACKEND_URL_STAGING"
+            selected_env="staging"
+          fi
+
+          if [ -z "$selected_url" ]; then
+            echo "Missing BACKEND_URL for $selected_env (branch: $TARGET_BRANCH)." >&2
+            exit 1
+          fi
+
+          echo "BACKEND_URL=$selected_url" >> "$GITHUB_ENV"
+          echo "Using $selected_env backend URL for branch $TARGET_BRANCH"
 
       - name: Install dependencies
         run: npm ci
