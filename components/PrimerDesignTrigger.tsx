@@ -1,7 +1,7 @@
 "use client";
 
 import { usePrimerDesign } from "@/hooks/usePrimerDesign";
-import type { PrimerDesignRequest } from "@/lib/api/primer";
+import type { PrimerDesignRequest } from "@/types";
 
 export default function PrimerDesignTrigger() {
   const { mutate, isPending, error, isSuccess } = usePrimerDesign();

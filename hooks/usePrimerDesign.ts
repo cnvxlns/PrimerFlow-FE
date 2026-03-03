@@ -2,10 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
-import type {
-  PrimerDesignRequest,
-  PrimerDesignResponse,
-} from "@/lib/api/primer";
+import type { PrimerDesignRequest, PrimerDesignResponse } from "@/types";
 import { postDesignPrimers } from "@/lib/api/primer";
 
 export const usePrimerDesign = () =>

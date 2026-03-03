@@ -6,7 +6,7 @@ import type {
   GenomeCanvasProps,
   GenomeCanvasRenderState,
   GenomeCanvasViewState,
-} from "@/lib/types/Genome";
+} from "@/types";
 
 const DEFAULT_VIEW_STATE: GenomeCanvasViewState = {
   scale: 1,

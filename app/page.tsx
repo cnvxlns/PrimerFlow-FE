@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import PrimerResultModal from "@/components/PrimerResultModal";
-import { analyzeGenome, type AnalyzeRequest, type AnalyzeResponse } from "@/lib/api/analysisService";
-import { demoGenome } from "@/lib/mocks/demoGenome";
-import type { GenomeData } from "@/lib/types/Genome";
+import {
+    analyzeGenome,
+    type AnalyzeRequestInput,
+} from "@/services/analysisService";
+import type { GenomeData, PrimerDesignResponseUI } from "@/types";
 import { useViewStore } from "@/store/useViewStore";
+import {
+    getInvalidStep1TemplateSequenceChar,
+    normalizeStep1TemplateSequence,
+} from "../src/lib/parsers/step1TemplateSequence";
 import Step1TemplateEssential from "@/components/steps/Step1TemplateEssential";
 import Step2PrimerProperties from "@/components/steps/Step2PrimerProperties";
 import Step3BindingLocation from "@/components/steps/Step3BindingLocation";
@@ -13,37 +19,37 @@ import Step4SpecificityPreview from "@/components/steps/Step4SpecificityPreview"
 import WizardFooterNav from "@/components/ui/WizardFooterNav";
 import WizardHeader from "@/components/ui/WizardHeader";
 
-const isGenomeFeature = (feature: any) =>
-    feature &&
-    typeof feature.start === "number" &&
-    typeof feature.end === "number" &&
-    feature.start <= feature.end;
+const toGenomeDataFromResponse = (response: PrimerDesignResponseUI | null): GenomeData | null => {
+    if (!response?.genome) return null;
+    const length =
+        response.genome.length ??
+        response.genome.length_bp ??
+        response.genome.sequence?.length ??
+        0;
+    const tracks = response.genome.tracks ?? [];
+    return { length, tracks };
+};
 
-const isGenomeData = (data: any): data is GenomeData =>
-    data &&
-    typeof data.length === "number" &&
-    Array.isArray(data.tracks) &&
-    data.tracks.every(
-        (track: any) =>
-            track &&
-            typeof track.id === "string" &&
-            Array.isArray(track.features) &&
-            track.features.every(isGenomeFeature),
-    );
-
-const toGenomeDataFromResponse = (
-    response: AnalyzeResponse | null,
-    fallback: GenomeData,
-): GenomeData => {
-    if (!response) return fallback;
-    const details = response.details;
-    if (details && typeof details === "object") {
-        const candidate = (details as any).genome ?? details;
-        if (isGenomeData(candidate)) {
-            return candidate;
-        }
-    }
-    return fallback;
+const DEFAULT_PREVIEW_GENOME: GenomeData = {
+    length: 12000,
+    tracks: [
+        {
+            id: "preview-primer-candidates",
+            name: "Primer 후보군",
+            height: 28,
+            features: [
+                { id: "p-01", start: 400, end: 1200, label: "P-01", color: "#2563eb" },
+                { id: "p-02", start: 1800, end: 2600, label: "P-02", color: "#0ea5e9" },
+                { id: "p-03", start: 3200, end: 4300, label: "P-03", color: "#22c55e" },
+            ],
+        },
+        {
+            id: "preview-target-region",
+            name: "Target 구간",
+            height: 18,
+            features: [{ id: "amplicon", start: 1500, end: 5200, label: "Amplicon", color: "#f97316" }],
+        },
+    ],
 };
 
 export default function Home() {
@@ -61,8 +67,8 @@ export default function Home() {
     const handleZoomOut = () =>
         setViewState({ ...viewState, scale: clampScale(viewState.scale / zoomStep) });
 
-    // 더미 genome 데이터
-    const genome = demoGenome;
+    const sequenceInputRef = useRef("");
+    const [resultGenome, setResultGenome] = useState<GenomeData | null>(null);
 
     const steps = [
         { id: 1, label: "Template & Essential" },
@@ -73,31 +79,107 @@ export default function Home() {
 
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
     const [isLoading, setIsLoading] = useState(false);
-    const [apiResult, setApiResult] = useState<AnalyzeResponse | null>(null);
+    const [apiResult, setApiResult] = useState<PrimerDesignResponseUI | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [step1WarningMessage, setStep1WarningMessage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [resultGenome, setResultGenome] = useState<GenomeData | null>(null);
     const totalSteps = steps.length;
     const handleStepChange = (next: number) => {
         const clamped = Math.min(Math.max(next, 1), totalSteps) as 1 | 2 | 3 | 4;
         setStep(clamped);
     };
-    const handleNext = () => handleStepChange(step + 1);
+    const clearStep1Warning = () => {
+        if (step1WarningMessage) {
+            setStep1WarningMessage(null);
+        }
+    };
+
+    const reportStep1ValidationMessage = (
+        mode: "step-transition" | "generate",
+        message: string | null,
+    ) => {
+        // Step 전환 검증은 Step1 인라인 경고를 사용하고,
+        // Generate 직전 검증은 하단 error banner를 사용해 중복 노출을 피한다.
+        if (mode === "step-transition") {
+            setStep1WarningMessage(message);
+            return;
+        }
+        setErrorMessage(message);
+    };
+
+    const validateStep1Sequence = (mode: "step-transition" | "generate") => {
+        const rawInputSequence = sequenceInputRef.current;
+        const normalizedSequence = normalizeStep1TemplateSequence(rawInputSequence);
+        const invalidChar = getInvalidStep1TemplateSequenceChar(rawInputSequence);
+        if (!invalidChar) {
+            if (mode === "generate" && rawInputSequence.trim().length > 0 && !normalizedSequence) {
+                // Generate 직전 검증: 입력이 있었는데 정규화 후 빈 문자열이면 요청 중단.
+                const warningMessage =
+                    "전송할 수 있는 유효한 염기서열이 없습니다. A, T, G, C 문자만 입력해 주세요.";
+                reportStep1ValidationMessage(mode, warningMessage);
+                return { isValid: false, normalizedSequence };
+            }
+
+            // 단계 이동 검증: Step1 경고를 초기화하고 다음 동작 진행.
+            reportStep1ValidationMessage(mode, null);
+            return { isValid: true, normalizedSequence };
+        }
+
+        const warningMessage = `대소문자 구분 없이 A, T, G, C만 입력 가능합니다. 잘못된 문자를 제거해 주세요.`;
+        reportStep1ValidationMessage(mode, warningMessage);
+        return { isValid: false, normalizedSequence };
+    };
+    const handleNext = () => {
+        if (step === 1 && !validateStep1Sequence("step-transition").isValid) {
+            return;
+        }
+
+        handleStepChange(step + 1);
+    };
     const handleBack = () => handleStepChange(step - 1);
     const isLastStep = step === totalSteps;
 
-    const trackCount = genome.tracks.length;
-    const featureCount = genome.tracks.reduce(
+    const previewGenome = DEFAULT_PREVIEW_GENOME;
+    const trackCount = previewGenome.tracks.length;
+    const featureCount = previewGenome.tracks.reduce(
         (count, track) => count + track.features.length,
         0,
     );
 
     const handleGenerate = async () => {
-        const payload: AnalyzeRequest = {
-            target_sequence: "ATGCGTACGTAGCTAGCTAGCTAGCTAATGCGTACGTAGCTAGCTAGCTAGCTA",
+        const validation = validateStep1Sequence("generate");
+        if (!validation.isValid) {
+            return;
+        }
+
+        const targetSeq = validation.normalizedSequence?.trim() ?? "";
+        if (!targetSeq) {
+            setErrorMessage("템플릿 시퀀스를 입력해 주세요.");
+            return;
+        }
+
+        const payload: AnalyzeRequestInput = {
+            target_sequence: targetSeq,
             species: "Homo sapiens",
             analysis_type: "primer_generation",
-            notes: "UI mock request while backend is offline",
+            product_size_min: 100,
+            product_size_max: 300,
+            tm_min: 57,
+            tm_opt: 60,
+            tm_max: 63,
+            gc_content_min: 40,
+            gc_content_max: 60,
+            max_tm_difference: 1,
+            gc_clamp: true,
+            max_poly_x: 5,
+            concentration: 50,
+            check_enabled: true,
+            splice_variant_handling: false,
+            snp_handling: false,
+            mispriming_library: false,
+            end_mismatch_region_size: 5,
+            end_mismatch_min_mismatch: 1,
+            search_start: 1,
         };
 
         setIsLoading(true);
@@ -106,8 +188,8 @@ export default function Home() {
         try {
             const result = await analyzeGenome(payload);
             setApiResult(result);
-            const genomeFromApi = toGenomeDataFromResponse(result, demoGenome);
-            setResultGenome(genomeFromApi);
+            const genomeFromApi = toGenomeDataFromResponse(result);
+            setResultGenome(genomeFromApi ?? null);
             setIsModalOpen(true);
         } catch (error) {
             const message =
@@ -118,7 +200,6 @@ export default function Home() {
             setIsModalOpen(false);
             // Surface the error for visibility during development.
             console.error("Generate Primers failed", error);
-            alert(message);
         } finally {
             setIsLoading(false);
         }
@@ -134,7 +215,7 @@ export default function Home() {
 
             <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 lg:px-10">
                 <WizardHeader
-                    genomeLength={genome.length}
+                    genomeLength={previewGenome.length}
                     trackCount={trackCount}
                     featureCount={featureCount}
                     steps={steps}
@@ -142,7 +223,13 @@ export default function Home() {
                     onStepChange={handleStepChange}
                 />
 
-                {step === 1 && <Step1TemplateEssential />}
+                {step === 1 && (
+                    <Step1TemplateEssential
+                        sequenceRef={sequenceInputRef}
+                        validationMessage={step1WarningMessage}
+                        onSequenceChange={clearStep1Warning}
+                    />
+                )}
 
                 {step === 2 && <Step2PrimerProperties />}
 
@@ -150,7 +237,7 @@ export default function Home() {
 
                 {step === 4 && (
                     <Step4SpecificityPreview
-                        genome={genome}
+                        genome={previewGenome}
                         viewState={viewState}
                         onViewStateChange={setViewState}
                         onZoomIn={handleZoomIn}

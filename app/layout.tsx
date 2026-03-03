@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { JetBrains_Mono, Poppins, Space_Grotesk } from "next/font/google";
 import SiteFooter from "@/components/ui/Footer";
 import Providers from "./providers";
 import "./globals.css";
@@ -12,6 +12,13 @@ const display = Space_Grotesk({
 const mono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -28,7 +35,7 @@ export default function RootLayout({
     <html lang="ko">
       <head>
       </head>
-      <body className={`${display.variable} ${mono.variable} antialiased`}>
+      <body className={`${display.variable} ${mono.variable} ${poppins.variable} antialiased`}>
         <Providers>
           <div className="min-h-screen flex flex-col">
             <div className="flex-1">{children}</div>

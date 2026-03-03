@@ -79,7 +79,7 @@ npm 또는 yarn
 
 # 1. 저장소 클론
 git clone [https://github.com/Seq-Lab/PrimerFlow-FE.git](https://github.com/Seq-Lab/PrimerFlow-FE.git)# 2. 프로젝트 폴더로 이동cd PrimerFlow-FE# 3. 패키지 설치
-npm install# 4. 환경 변수 설정 (.env.local 생성)# (백엔드 API 주소 설정 예시)# echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local# 5. 개발 서버 실행
+npm install# 4. 환경 변수 설정 (.env.local 생성 - 현재는 비워둠, API는 /api/v1 상대 경로 사용)# 5. 개발 서버 실행
 npm run dev
 
 프로젝트 구조

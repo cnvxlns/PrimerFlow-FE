@@ -4,7 +4,10 @@ export type GenomeFeature = {
   id?: string;
   start: number;
   end: number;
+  start_bp?: number;
+  end_bp?: number;
   label?: string;
+  name?: string;
   color?: string;
 };
 
