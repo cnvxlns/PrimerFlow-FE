@@ -18,8 +18,8 @@
 
 * **Custom Rendering Engine:** DOM 조작 방식이 아닌, Canvas API 기반의 자체 렌더링 엔진을 구현하여 10,000bp 이상의 데이터를 60fps로 부드럽게 렌더링합니다.
 * **Optimization Algorithms:**
-    * **View Culling:** 이분 탐색(Binary Search)을 활용하여 화면 밖의 데이터 렌더링을 생략합니다.
-    * **Auto Layout:** 그리디(Greedy) 알고리즘을 응용하여 겹치는 프라이머 구간을 자동으로 배치합니다.
+  * **View Culling:** 이분 탐색(Binary Search)을 활용하여 화면 밖의 데이터 렌더링을 생략합니다.
+  * **Auto Layout:** 그리디(Greedy) 알고리즘을 응용하여 겹치는 프라이머 구간을 자동으로 배치합니다.
 * **Interactive UX:** 행렬 변환(Matrix Transformation)을 적용한 정밀한 Zoom-In/Out 및 Panning 기능을 제공합니다.
 
 ## 🛠 기술 스택 (Tech Stack)
@@ -95,11 +95,11 @@ npm run dev
 
 ## 주간 진행 상황
 ### Week 1 (25.12.22 - 25.12.28)
-- 작업 내역: 
+- 작업 내역:
   - 기술스택 선정
     - Next.js: 메인 페이지(app/page.tsx)와 전역 레이아웃을 구성, 정적 리소스 관리·헤드 설정
     - Typescript: 컴포넌트·전역 스토어·유틸 타입을 명시
-    - Canvas API: 캔버스 컨텍스트를 직접 처리; 대용량 서열 랜더링, 줌/패닝 변환, 텍스트/바 도형 그리기 
+    - Canvas API: 캔버스 컨텍스트를 직접 처리; 대용량 서열 랜더링, 줌/패닝 변환, 텍스트/바 도형 그리기
     - Zustand: 캔버스 뷰 상태, 리셋/업데이트 액션의 전역 관리
     - Vercel: Next.js앱 배포
   - 프로젝트 기본 아키텍처 및 스켈레톤 코드 구성
@@ -107,7 +107,7 @@ npm run dev
 - 다음 주 계획: page.tsx, layout.tsx 구현, 목 데이터 출력 해보기
 
 ### Week 2 (25.12.29 - 26.01.04)z`
-- 작업 내역: 
+- 작업 내역:
   - 더미 데이터로 페이지에 연결
   - 뷰 상태(Zustand)와 줌·패닝 동작을 정돈
 - AI 활용:
@@ -123,8 +123,8 @@ npm run dev
   - PCR 프라이머 디자인 스펙을 작성해 1-based 규칙·IUPAC 제한·성능 목표를 포함한 요구사항과 시나리오를 정리
   - 메인 UI 디자인 결정; 다크 톤 4단계 스텝 플로우로 리워크
   - Genome 타입 분리
-- AI 활용: 
-  - stitch, figma에 같은 프롬프트를 넣고 디자인을 비교, 채택. 
+- AI 활용:
+  - stitch, figma에 같은 프롬프트를 넣고 디자인을 비교, 채택.
 - 완료 기능:
   - 단계별 UI 구현 완료
     - 1단계: 시퀀스 입력(FASTA/raw textarea)
@@ -167,14 +167,14 @@ npm run dev
 ### Week 5 (26.01.19 ~ 26.01.25)
 - 작업 내역: 프론트엔드-백엔드 간 API 통신 규격(Spec) 정의 및 연동 구현
 - AI 활용: codex 이용하여 복잡한 Nested Object을 UI 전용 상태(Flat Object)로 변환하는 어댑터 패턴 코드 자동 생성
-- 완료 기능: 
+- 완료 기능:
   - 프라이머 설계 요청(Request) 프로세스 구현: 입력값 → 어댑터 → API 호출 흐름 완성
   - 결과 모달(Result Modal) 데이터 바인딩: Mock 데이터를 활용하여 캔버스 및 리스트에 분석 결과 렌더링
 - 다음 주 계획: 사용자 입력 데이터(DNA 서열)에 대한 전처리(Sanitization) 및 유효성 검증 로직 구현
 
 
 ### Week 6 (26.01.26 ~ 26.02.01)
-- 작업 내역: 
+- 작업 내역:
   - 대용량 데이터(10,000bp 이상) 렌더링 성능 최적화를 위한 뷰포트 탐색 로직 개선
   - 캔버스 UI 스크롤 조작 시 배경이 함께 밀리는 버그(Jittering) 수정 및 레이어 고정 처리
 - AI 활용:
@@ -209,6 +209,17 @@ npm run dev
   - 목데이터(Mock Data) 기반 응답 제거 및 실서버 응답 구조 기준으로 프론트 로직 전환
   - 프라이머 분석 요청 파라미터를 백엔드 스펙에 맞게 정리하고 요청/응답 매핑 흐름 점검
   - API 호출 실패 상황(네트워크/서버 오류)에 대한 사용자 메시지 노출 및 상태 처리 보강
+  - 디자인/UI 리뉴얼
+    - Poppins 폰트 도입: 헤더 타이틀을 Poppins로 변경
+    - 헤더 리뉴얼: `PF` 텍스트를 로고 이미지로 교체하고 타이틀을 `Primer Designer by SeqLab`으로 변경
+    - 컴팩트한 디자인: Step 1 템플릿 시퀀스 카드 헤더 패딩 조정(`py-4 -> py-2`)
+    - UI 클린업: Step 4 불필요 요소(`Quality notes`) 제거
+    - 파일 정리: 불필요한 빈 파일(`tailwind.config.ts`) 삭제
+  - 코드 품질 자동 검증 환경 구축 PR 반영
+    - CI 자동화: GitHub Actions에서 PR 시 Lint, Test, Build 자동 실행
+    - 테스트 인프라: Vitest 도입, `vitest.config.ts` 및 테스트 실행 스크립트(`npm test`) 추가
+    - 린트 개선: lint 스크립트를 `eslint .`로 확장해 프로젝트 전역 검사 수행
+    - 테스트 케이스: `visibleRange` 알고리즘 로직 검증용 기초 테스트 코드 작성
 - AI 활용:
   - Codex를 활용해 API 클라이언트 경로(`/api/design`)와 서비스 레이어 매핑 로직 검증
   - 응답 데이터 변환(UI 전용 트랙/프라이머 후보 매핑) 과정의 타입 안정성 점검 및 개선
@@ -216,12 +227,19 @@ npm run dev
   - 프라이머 설계 요청이 배포된 백엔드 API로 전송되도록 연동 완료
   - 백엔드 응답을 Result Modal/Canvas에 렌더링 가능한 형태로 변환하여 표시
   - Mock 의존 흐름을 제거하고 실데이터 기반 동작으로 전환
-- 다음 주 계획:
-  - Vercel 환경에 프론트엔드 배포 및 배포 환경 변수(API Base URL) 점검
+  - PR 단위 품질 게이트(Lint/Test/Build) 자동 검증 체계 구축
+  - `visibleRange` 핵심 로직 테스트 기반 확보
 
 ### Week 9 (26.02.16 ~ 26.02.22)
 - 작업 내역:
+  - 취약점 경고 대응
+  - `npm audit fix --force`를 통해 의존성 및 lockfile 업데이트
+  - 보안 패치 적용 후 Lint/Test/Build 기준 기본 동작 점검
 - AI 활용:
+  - Codex로 `package.json`/`package-lock.json` 변경 diff를 검토하고 버전 상향 내역 정리
+  - 업데이트 이후 CI 기준(린트/테스트/빌드) 회귀 위험 체크리스트 점검
 - 완료 기능:
-- 다음 주 계획:
-- 작업 내역: 
+  - Next.js: `16.1.1 -> 16.1.6`
+  - eslint: `9 -> 9.39.2`
+  - eslint-config-next: `16.1.1 -> 16.1.6`
+  - npm audit 취약점 경고 대응을 위한 프론트엔드 의존성 업데이트 완료
