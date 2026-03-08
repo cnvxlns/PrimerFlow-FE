@@ -1,34 +1,23 @@
 "use client";
 
 import { useRef, useState } from "react";
-import PrimerResultModal from "@/components/PrimerResultModal";
 import {
     analyzeGenome,
     type AnalyzeRequestInput,
 } from "@/services/analysisService";
-import type { GenomeData, PrimerDesignResponseUI } from "@/types";
+import type { GenomeData } from "@/types";
 import { useViewStore } from "@/store/useViewStore";
 import {
     getInvalidStep1TemplateSequenceChar,
     normalizeStep1TemplateSequence,
 } from "../src/lib/parsers/step1TemplateSequence";
+import { savePrimerResultToStorage } from "@/lib/storage/primerResultStorage";
 import Step1TemplateEssential from "@/components/steps/Step1TemplateEssential";
 import Step2PrimerProperties from "@/components/steps/Step2PrimerProperties";
 import Step3BindingLocation from "@/components/steps/Step3BindingLocation";
 import Step4SpecificityPreview from "@/components/steps/Step4SpecificityPreview";
 import WizardFooterNav from "@/components/ui/WizardFooterNav";
 import WizardHeader from "@/components/ui/WizardHeader";
-
-const toGenomeDataFromResponse = (response: PrimerDesignResponseUI | null): GenomeData | null => {
-    if (!response?.genome) return null;
-    const length =
-        response.genome.length ??
-        response.genome.length_bp ??
-        response.genome.sequence?.length ??
-        0;
-    const tracks = response.genome.tracks ?? [];
-    return { length, tracks };
-};
 
 const DEFAULT_PREVIEW_GENOME: GenomeData = {
     length: 12000,
@@ -47,7 +36,7 @@ const DEFAULT_PREVIEW_GENOME: GenomeData = {
             id: "preview-target-region",
             name: "Target 구간",
             height: 18,
-            features: [{ id: "amplicon", start: 1500, end: 5200, label: "Amplicon", color: "#f97316" }],
+            features: [{ id: "template", start: 1500, end: 5200, label: "Template", color: "#f97316" }],
         },
     ],
 };
@@ -68,7 +57,6 @@ export default function Home() {
         setViewState({ ...viewState, scale: clampScale(viewState.scale / zoomStep) });
 
     const sequenceInputRef = useRef("");
-    const [resultGenome, setResultGenome] = useState<GenomeData | null>(null);
 
     const steps = [
         { id: 1, label: "Template & Essential" },
@@ -79,10 +67,8 @@ export default function Home() {
 
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
     const [isLoading, setIsLoading] = useState(false);
-    const [apiResult, setApiResult] = useState<PrimerDesignResponseUI | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [step1WarningMessage, setStep1WarningMessage] = useState<string | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [restrictionEnzymes, setRestrictionEnzymes] = useState<string[]>([]);
     const totalSteps = steps.length;
     const handleStepChange = (next: number) => {
@@ -184,22 +170,38 @@ export default function Home() {
             restriction_enzymes: restrictionEnzymes,
         };
 
+        let resultTab: Window | null = null;
+        if (typeof window !== "undefined") {
+            resultTab = window.open("/result", "_blank");
+            if (!resultTab) {
+                setErrorMessage(
+                    "브라우저에서 새 탭 열기를 차단했습니다. 팝업 차단 해제 후 다시 시도해 주세요.",
+                );
+                return;
+            }
+        }
+
         setIsLoading(true);
         setErrorMessage(null);
 
         try {
             const result = await analyzeGenome(payload);
-            setApiResult(result);
-            const genomeFromApi = toGenomeDataFromResponse(result);
-            setResultGenome(genomeFromApi ?? null);
-            setIsModalOpen(true);
+            const resultKey = savePrimerResultToStorage(result);
+            const resultUrl = `/result?resultKey=${encodeURIComponent(resultKey)}`;
+
+            if (resultTab && !resultTab.closed) {
+                resultTab.location.href = resultUrl;
+                resultTab.focus();
+            } else if (typeof window !== "undefined") {
+                window.open(resultUrl, "_blank");
+            }
         } catch (error) {
             const message =
                 error instanceof Error ? error.message : "Failed to generate primers.";
             setErrorMessage(message);
-            setApiResult(null);
-            setResultGenome(null);
-            setIsModalOpen(false);
+            if (resultTab && !resultTab.closed) {
+                resultTab.close();
+            }
             // Surface the error for visibility during development.
             console.error("Generate Primers failed", error);
         } finally {
@@ -268,12 +270,6 @@ export default function Home() {
                 )}
             </main>
 
-            <PrimerResultModal
-                isOpen={isModalOpen}
-                apiResult={apiResult}
-                genome={resultGenome}
-                onClose={() => setIsModalOpen(false)}
-            />
         </div>
     );
 }

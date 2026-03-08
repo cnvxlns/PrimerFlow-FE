@@ -10,7 +10,6 @@ import type {
 } from "@/types";
 
 interface PrimerResultModalProps {
-    isOpen: boolean;
     apiResult: PrimerDesignResponseUI | null;
     genome: GenomeData | null;
     onClose: () => void;
@@ -55,71 +54,72 @@ function PrimerResultCanvasPanel({
     const handleReset = () => setViewState(initialViewState);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6">
-            <div className="relative w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl shadow-black/30">
-                <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+        <section className="relative mx-auto w-full max-w-7xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/90 shadow-2xl shadow-black/20">
+            <div className="border-b border-slate-800 px-6 py-4 sm:px-8">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                             Primer Design Results
                         </p>
-                        <h2 className="text-xl font-semibold text-white">Primer Design Results</h2>
+                        <h2 className="text-xl font-semibold text-white sm:text-2xl">Primer Design Results</h2>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-semibold text-slate-200 transition hover:border-blue-500 hover:text-white"
+                        className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-500 hover:text-white"
                     >
                         Close
                     </button>
                 </div>
+            </div>
 
-                <div className="flex flex-col gap-4 px-6 py-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                            <span className="rounded-full border border-slate-800 bg-slate-900/80 px-3 py-1 text-sm text-slate-200">
-                                Zoom {viewState.scale.toFixed(2)}x
-                            </span>
-                            <button
-                                type="button"
-                                aria-label="Zoom out"
-                                onClick={handleZoomOut}
-                                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-800 bg-slate-900/80 text-lg font-semibold transition hover:border-blue-500/60 hover:bg-blue-600/70 hover:text-white"
-                            >
-                                -
-                            </button>
-                            <button
-                                type="button"
-                                aria-label="Zoom in"
-                                onClick={handleZoomIn}
-                                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-800 bg-slate-900/80 text-lg font-semibold transition hover:border-blue-500/60 hover:bg-blue-600/70 hover:text-white"
-                            >
-                                +
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleReset}
-                                className="rounded-full border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-500/60 hover:text-white"
-                            >
-                                Reset view
-                            </button>
-                        </div>
-                        <div className="text-xs text-slate-400">
-                            Result: {apiResult?.result} | Score: {apiResult?.score}
-                        </div>
+            <div className="flex flex-col gap-4 px-6 py-5 sm:px-8 sm:py-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-slate-800 bg-slate-900/80 px-3 py-1 text-sm text-slate-200">
+                            Zoom {viewState.scale.toFixed(2)}x
+                        </span>
+                        <button
+                            type="button"
+                            aria-label="Zoom out"
+                            onClick={handleZoomOut}
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-800 bg-slate-900/80 text-lg font-semibold transition hover:border-blue-500/60 hover:bg-blue-600/70 hover:text-white"
+                        >
+                            -
+                        </button>
+                        <button
+                            type="button"
+                            aria-label="Zoom in"
+                            onClick={handleZoomIn}
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-800 bg-slate-900/80 text-lg font-semibold transition hover:border-blue-500/60 hover:bg-blue-600/70 hover:text-white"
+                        >
+                            +
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleReset}
+                            className="rounded-full border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-500/60 hover:text-white"
+                        >
+                            Reset view
+                        </button>
                     </div>
+                    <div className="text-xs text-slate-400">
+                        Result: {apiResult?.result} | Score: {apiResult?.score}
+                    </div>
+                </div>
 
-                    <div
-                        ref={canvasShellRef}
-                        className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-[#0a1428] to-[#0c1223] p-4"
-                    >
-                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,#1e2b4c,transparent_40%),radial-gradient(circle_at_80%_30%,#0f1b34,transparent_45%)] opacity-60" />
-                        <GenomeCanvas
-                            genome={genome}
-                            viewState={viewState}
-                            onViewStateChange={setViewState}
-                            className="w-full"
-                            style={{ height: "430px" }}
-                            onDraw={(ctx, _canvas, renderState) => {
+                <div
+                    ref={canvasShellRef}
+                    className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-[#0a1428] to-[#0c1223] p-4"
+                >
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,#1e2b4c,transparent_40%),radial-gradient(circle_at_80%_30%,#0f1b34,transparent_45%)] opacity-60" />
+                    <GenomeCanvas
+                        genome={genome}
+                        viewState={viewState}
+                        onViewStateChange={setViewState}
+                        className="w-full"
+                        style={{ height: "min(68vh, 620px)" }}
+                        onDraw={(ctx, _canvas, renderState) => {
                                 const { data, viewport, viewState: canvasViewState } = renderState;
                                 if (!data) return;
 
@@ -262,12 +262,11 @@ function PrimerResultCanvasPanel({
 
                                     y += trackHeight + trackGap;
                                 });
-                            }}
-                        />
-                    </div>
+                        }}
+                    />
                 </div>
             </div>
-        </div>
+        </section>
     );
 }
 
@@ -278,47 +277,15 @@ const createInitialViewState = (): GenomeCanvasViewState => ({
 });
 
 export default function PrimerResultModal({
-    isOpen,
     apiResult,
     genome,
     onClose,
 }: PrimerResultModalProps) {
     const canvasShellRef = useRef<HTMLDivElement | null>(null);
-    const [canvasWidth, setCanvasWidth] = useState(() =>
-        typeof window === "undefined" ? 960 : Math.max(320, Math.floor(window.innerWidth * 0.72)),
-    );
+    const [canvasWidth, setCanvasWidth] = useState(960);
 
     useEffect(() => {
-        if (!isOpen) return;
-
-        const { body, documentElement } = document;
-        const previousBodyOverflow = body.style.overflow;
-        const previousBodyPaddingRight = body.style.paddingRight;
-        const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
-        const previousHtmlOverflow = documentElement.style.overflow;
-        const previousHtmlOverscrollBehavior = documentElement.style.overscrollBehavior;
-
-        const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
-        body.style.overflow = "hidden";
-        body.style.overscrollBehavior = "none";
-        documentElement.style.overflow = "hidden";
-        documentElement.style.overscrollBehavior = "none";
-
-        if (scrollbarWidth > 0) {
-            body.style.paddingRight = `${scrollbarWidth}px`;
-        }
-
-        return () => {
-            body.style.overflow = previousBodyOverflow;
-            body.style.paddingRight = previousBodyPaddingRight;
-            body.style.overscrollBehavior = previousBodyOverscrollBehavior;
-            documentElement.style.overflow = previousHtmlOverflow;
-            documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
-        };
-    }, [isOpen]);
-
-    useEffect(() => {
-        if (!isOpen) return;
+        if (!genome) return;
 
         const element = canvasShellRef.current;
         if (!element) return;
@@ -338,7 +305,7 @@ export default function PrimerResultModal({
         return () => {
             resizeObserver.disconnect();
         };
-    }, [isOpen]);
+    }, [genome]);
 
     const fittedInitialViewState = useMemo(() => {
         if (!genome) return createInitialViewState();
@@ -352,7 +319,7 @@ export default function PrimerResultModal({
         });
     }, [canvasWidth, genome]);
 
-    if (!isOpen || !genome) return null;
+    if (!genome) return null;
 
     const featureCount = genome.tracks.reduce(
         (count, track) => count + (Array.isArray(track.features) ? track.features.length : 0),
