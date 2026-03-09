@@ -1,8 +1,66 @@
 "use client";
 
-import { MapPin } from "lucide-react";
+import { MapPin, X } from "lucide-react";
+import { useState, type KeyboardEvent } from "react";
 
-export default function Step3BindingLocation() {
+type Step3BindingLocationProps = {
+    restrictionEnzymes: string[];
+    onRestrictionEnzymesChange: (next: string[]) => void;
+};
+
+const normalizeEnzymeName = (value: string) => value.trim().replace(/\s+/g, " ");
+
+export default function Step3BindingLocation({
+    restrictionEnzymes,
+    onRestrictionEnzymesChange,
+}: Step3BindingLocationProps) {
+    const [enzymeInput, setEnzymeInput] = useState("");
+
+    const addRestrictionEnzyme = (rawValue: string) => {
+        const normalized = normalizeEnzymeName(rawValue);
+        if (!normalized) {
+            return false;
+        }
+
+        const hasDuplicate = restrictionEnzymes.some(
+            (enzyme) => enzyme.toLowerCase() === normalized.toLowerCase(),
+        );
+        if (hasDuplicate) {
+            return false;
+        }
+
+        onRestrictionEnzymesChange([...restrictionEnzymes, normalized]);
+        return true;
+    };
+
+    const removeRestrictionEnzyme = (enzymeToRemove: string) => {
+        onRestrictionEnzymesChange(
+            restrictionEnzymes.filter((enzyme) => enzyme !== enzymeToRemove),
+        );
+    };
+
+    const handleEnzymeInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "Enter" || event.key === ",") {
+            event.preventDefault();
+            if (addRestrictionEnzyme(enzymeInput)) {
+                setEnzymeInput("");
+            }
+            return;
+        }
+
+        if (event.key === "Backspace" && !enzymeInput && restrictionEnzymes.length > 0) {
+            event.preventDefault();
+            const next = restrictionEnzymes.slice(0, -1);
+            onRestrictionEnzymesChange(next);
+        }
+    };
+
+    const handleEnzymeInputBlur = () => {
+        if (addRestrictionEnzyme(enzymeInput)) {
+            setEnzymeInput("");
+        }
+    };
+
     return (
         <section className="flex flex-col gap-4">
             <div className="rounded-xl border border-slate-800/70 bg-slate-900/80 px-4 py-3 text-base font-bold text-slate-300">
@@ -93,18 +151,26 @@ export default function Step3BindingLocation() {
                             Restriction Enzymes
                         </label>
                         <div className="w-full bg-[#0b1224] border border-slate-800 rounded-lg p-2 flex flex-wrap gap-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
-                            {["EcoRI", "BamHI", "HindIII"].map((site) => (
-                                <span
-                                    key={site}
+                            {restrictionEnzymes.map((enzyme) => (
+                                <button
+                                    key={enzyme}
                                     className="inline-flex items-center gap-1 bg-blue-500/15 text-blue-100 text-xs font-bold px-2 py-1 rounded border border-blue-500/30"
+                                    onClick={() => removeRestrictionEnzyme(enzyme)}
+                                    type="button"
                                 >
-                                    {site}
-                                </span>
+                                    <span>{enzyme}</span>
+                                    <X className="h-3 w-3" aria-hidden="true" />
+                                    <span className="sr-only">{`${enzyme} 삭제`}</span>
+                                </button>
                             ))}
                             <input
                                 className="bg-transparent border-none p-1 text-sm text-white focus:ring-0 placeholder:text-gray-600 min-w-[120px] flex-1"
                                 placeholder="Type enzyme & press Enter..."
                                 type="text"
+                                value={enzymeInput}
+                                onChange={(event) => setEnzymeInput(event.target.value)}
+                                onKeyDown={handleEnzymeInputKeyDown}
+                                onBlur={handleEnzymeInputBlur}
                             />
                         </div>
                     </div>

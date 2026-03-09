@@ -28,6 +28,7 @@ const isPrimerRelatedTrack = (trackIdOrName: string) => {
   const normalized = trackIdOrName.toLowerCase();
   return (
     normalized.includes("primer") ||
+    normalized.includes("template") ||
     normalized.includes("amplicon") ||
     normalized.includes("target")
   );
@@ -37,6 +38,7 @@ const isPrimerRelatedFeature = (feature: GenomeFeature) => {
   const label = String(feature.label ?? feature.name ?? feature.id ?? "").toLowerCase();
   return (
     label.includes("primer") ||
+    label.includes("template") ||
     label.includes("amplicon") ||
     label.includes("target")
   );

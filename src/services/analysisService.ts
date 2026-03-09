@@ -202,18 +202,18 @@ const toUiResponse = (raw: PrimerDesignResponse): PrimerDesignResponseUI => {
 
   const starts = uiCandidates.map((c) => c.start ?? 0).filter((n) => Number.isFinite(n));
   const ends = uiCandidates.map((c) => c.end ?? 0).filter((n) => Number.isFinite(n));
-  const ampTrack =
+  const templateTrack =
     starts.length && ends.length
       ? [
           {
-            id: "amplicon",
-            name: "Amplicon",
+            id: "template",
+            name: "Template",
             features: [
               {
-                id: "amplicon-1",
+                id: "template-1",
                 start: Math.min(...starts),
                 end: Math.max(...ends),
-                label: "Amplicon",
+                label: "Template",
                 color: "#f97316",
               },
             ],
@@ -224,7 +224,7 @@ const toUiResponse = (raw: PrimerDesignResponse): PrimerDesignResponseUI => {
   const uiGenome: UIGenome = {
     ...genome,
     length_bp: genome.length_bp ?? length,
-    tracks: [...baseTracks, ...ampTrack, ...primerTrack],
+    tracks: [...baseTracks, ...templateTrack, ...primerTrack],
   };
 
   return {
